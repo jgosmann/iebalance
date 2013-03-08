@@ -1,0 +1,14 @@
+{
+    "num_tunings": 8,
+    "num_trains": 1000,
+    "fraction_inhibitory": 0.2,
+    "refractory_period": [5, "msecond"],
+    "raw_signals": {
+        "length": [1.5, "second"],
+        "peak_firing_rate": [500, "hertz"],
+        "background_activity": [5, "hertz"],
+        "sparseness": 2,
+        "filter_time_constant": [50, "msecond"],
+        "dt": [0.1, "msecond"]
+    }
+}
