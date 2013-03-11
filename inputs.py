@@ -123,7 +123,7 @@ class SpikeTimesGenerator(Configurable):
         # expressions
         excitatory, inhibitory, last_raw_signal_values = zip(
             (e for e, i, rs in trains), (i for e, i, rs in trains),
-            (rs for e, i, res in trains))
+            (rs for e, i, rs in trains))
         return self.trains_to_spiketimes_list(itertools.chain(
             itertools.chain(*excitatory), itertools.chain(*inhibitory))), \
             last_raw_signal_values
