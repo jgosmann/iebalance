@@ -121,9 +121,9 @@ class SpikeTimesGenerator(Configurable):
             self, i) for i in xrange(self.num_tunings))
         # zip(*trains) could us too much memory, better use generator
         # expressions
-        excitatory, inhibitory, last_raw_signal_values = zip(
-            (e for e, i, rs in trains), (i for e, i, rs in trains),
-            (rs for e, i, rs in trains))
+        excitatory = (e for e, i, rs in trains)
+        inhibitory = (i for e, i, rs in trains)
+        last_raw_signal_values = np.asarray([rs for e, i, rs in trains])
         return self.trains_to_spiketimes_list(itertools.chain(
             itertools.chain(*excitatory), itertools.chain(*inhibitory))), \
             last_raw_signal_values
