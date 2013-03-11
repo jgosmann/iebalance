@@ -119,7 +119,11 @@ class SpikeTimesGenerator(Configurable):
             num_jobs = min(self.num_tunings, num_jobs)
         trains = Parallel(num_jobs, verbose)(delayed(gen_trains_for_tuning)(
             self, i) for i in xrange(self.num_tunings))
-        excitatory, inhibitory, last_raw_signal_values = zip(*trains)
+        # zip(*trains) could us too much memory, better use generator
+        # expressions
+        excitatory, inhibitory, last_raw_signal_values = zip(
+            (e for e, i, rs in trains), (i for e, i, rs in trains),
+            (rs for e, i, res in trains))
         return self.trains_to_spiketimes_list(itertools.chain(
             itertools.chain(*excitatory), itertools.chain(*inhibitory))), \
             last_raw_signal_values
