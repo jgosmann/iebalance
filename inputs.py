@@ -74,8 +74,7 @@ class InputSignalGenerator(Configurable):
             signal[start:end] = 0
         return signal
 
-    def generate(self):
-        signal = self.gen_filtered_white_noise()
+    def rectify(self, signal):
         sparsified = self.remove_bumps(signal, self.sparseness)
         rectified = np.maximum(0, sparsified)
         normalized = self.peak_firing_rate * self.dt * rectified / \
@@ -129,21 +128,23 @@ class SpikeTimesGenerator(Configurable):
     def gen_trains_for_tuning(self, i):
         logger.info("Generating spike trains for tuning %i of %i ..." %
                     (i + 1, self.num_tunings))
-        input_signal = self.signal_gen.generate()
+        raw_signal = self.signal_gen.gen_filtered_white_noise()
+        input_signal = self.signal_gen.rectify(raw_signal)
         excitatory = [self.gen_spike_train(input_signal)
                       for i in xrange(self.num_excit_per_tuning)]
         inhibitory = [self.gen_spike_train(input_signal)
                       for i in xrange(self.num_inhib_per_tuning)]
-        return excitatory, inhibitory
+        return excitatory, inhibitory, raw_signal[-1]
 
     def generate(self, num_jobs=None, verbose=0):
         if num_jobs is not None:
             num_jobs = min(self.num_tunings, num_jobs)
         trains = Parallel(num_jobs, verbose)(delayed(gen_trains_for_tuning)(
             self, i) for i in xrange(self.num_tunings))
-        excitatory, inhibitory = zip(*trains)
+        excitatory, inhibitory, last_raw_signal_values = zip(*trains)
         return self.trains_to_spiketimes_list(itertools.chain(
-            itertools.chain(*excitatory), itertools.chain(*inhibitory)))
+            itertools.chain(*excitatory), itertools.chain(*inhibitory))), \
+            last_raw_signal_values
 
     def get_indexing_scheme(self):
         num_excitatory = self.num_tunings * self.num_excit_per_tuning
@@ -202,10 +203,17 @@ if __name__ == '__main__':
             "Table of spike times of Poisson spike train and the index of the" +
             " neuron producing the spike.")
         generator = SpikeTimesGenerator(config)
-        spike_table.append(generator.generate(args.jobs[0], args.verbose))
+        spiketimes, last_raw_signal_values = generator.generate(
+            args.jobs[0], args.verbose)
+        spike_table.append(spiketimes)
         spike_table.attrs.spiketime_unit = 'second'
         spike_table.attrs.config = config
         out_file.flush()
+
+        raw_signal_array = out_file.createArray(
+            input_group, 'last_raw_signal_values', last_raw_signal_values,
+            "The last raw signal value of each tuning group. Can be used to " +
+            "extend the length of the input signals later on.")
 
         indexing_group = out_file.createGroup(
             input_group, 'indexing', "Indices of excitatory and inhibitory " +
