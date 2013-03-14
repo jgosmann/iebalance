@@ -1,9 +1,12 @@
 import brian.units
 
 
-def quantity(l):
-    magnitude, unit = l
+def quantity((magnitude, unit)):
     return magnitude * getattr(brian.units, unit)
+
+
+def quantity_list((l, unit)):
+    return [quantity((magnitude, unit)) for magnitude in l]
 
 
 class Configurable(object):

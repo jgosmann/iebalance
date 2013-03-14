@@ -4,10 +4,11 @@
     "fraction_inhibitory": 0.2,
     "refractory_period": [5, "msecond"],
     "raw_signals": {
-        "length": [150, "second"],
+        "length": [0.5, "second"],
         "peak_firing_rate": [500, "hertz"],
         "background_activity": [5, "hertz"],
         "sparseness": 2,
+        "approximate_normalization": 0.03,
         "filter_time_constant": [50, "msecond"],
         "dt": [0.1, "msecond"]
     }
