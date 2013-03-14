@@ -23,13 +23,14 @@ class ModelNeuronGroupBuilder(Configurable):
         self._add_config_value('tau_I', quantity)  # inhibit. syn. time constant
         self._add_config_value('I_b', quantity)  # additional current
 
+        self._add_config_value('tau_stdp', quantity)
+
         self.eqs = b.Equations('''
             I_E = g_E * (self.V_E - V) : amp
-            I_I = g_I * (self.V_I - V) : amp
+            I_I : amp
             dV/dt = ((self.V_rest - V) + (I_E + I_I + self.I_b) / self.g_leak) / \
                 self.tau : volt
             dg_E/dt = -g_E / self.tau_E : siemens
-            dg_I/dt = -g_I / self.tau_I : siemens
             ''')
 
     def build(self, N=1):
@@ -63,6 +64,20 @@ class ModelConnectionBuilder(Configurable):
         Configurable.__init__(self, config)
         self._add_config_value('g_E_bar', quantity)
         self._add_config_value('g_I_bar', quantity)
+        self._add_config_value('tau_stdp', quantity)
+        self._add_config_value('tau_I', quantity)  # inhibit. syn. time constant
+        self._add_config_value('eta', float)
+        self._add_config_value('rho', quantity)
+        self._add_config_value('V_E', quantity)  # excitatory reversal potential
+        self._add_config_value('V_I', quantity)  # inhibitory reversal potential
+        self.alpha = 2 * self.rho * self.tau_stdp
+        self.eqs = '''
+            dxPre/dt = -xPre / self.tau_stdp : 1
+            dxPost/dt = -xPost / self.tau_stdp : 1
+            dg/dt = -g / self.tau_I : siemens
+            I = g * (self.V_I - V_post) : amp
+            w : 1
+            '''
 
     def build(self, groups, out_neuron):
         excitatory_connections = b.Connection(
@@ -71,32 +86,41 @@ class ModelConnectionBuilder(Configurable):
             groups.excitatory, neuron, self.g_E_bar *
             np.atleast_2d(tuning_function(groups.ex_group_membership, 5)).T)
 
-        inhibitory_connections = b.Connection(
-            groups.inhibitory, out_neuron, 'g_I', structure='dense')
-        inhibitory_connections[:, :] = 0.1 * self.g_I_bar
+        eta = self.eta
+        alpha = self.alpha
+        g_I_bar = self.g_I_bar
+        assert (eta, alpha, g_I_bar)  # suppress unused warnings
+
+        inhibitory_connections = b.Synapses(
+            groups.inhibitory, out_neuron, model=self.eqs,
+            pre='xPre += 1; g += w; w += g_I_bar * eta * (xPre - alpha)',
+            post='xPost += 1; w += g_I_bar * eta * xPost')
+        inhibitory_connections.w = 0.1 * self.g_I_bar
+        inhibitory_connections[:, :] = True
+        out_neuron.I_I = inhibitory_connections.I
         return excitatory_connections, inhibitory_connections
 
 
-class ModelSTDPBuilder(Configurable):
-    def __init__(self, config):
-        Configurable.__init__(self, config)
-        self._add_config_value('tau_stdp', quantity)
-        self._add_config_value('eta', float)
-        self._add_config_value('rho', quantity)
-        self.alpha = 2 * self.rho * self.tau_stdp
-        self.eqs = '''
-            dx_pre/dt = -x_pre / self.tau_stdp : 1
-            dx_post/dt = -x_post / self.tau_stdp : 1
-            '''
+#class ModelSTDPBuilder(Configurable):
+    #def __init__(self, config):
+        #Configurable.__init__(self, config)
+        #self._add_config_value('tau_stdp', quantity)
+        #self._add_config_value('eta', float)
+        #self._add_config_value('rho', quantity)
+        #self.alpha = 2 * self.rho * self.tau_stdp
+        #self.eqs = '''
+            #dx_pre/dt = -x_pre / self.tau_stdp : 1
+            #dx_post/dt = -x_post / self.tau_stdp : 1
+            #'''
 
-    def build(self, connections, g_bar):
-        eta = self.eta
-        alpha = self.alpha
-        assert eta, alpha  # suppress unused warnings
-        return b.STDP(
-            connections, eqs=self.eqs,
-            pre='x_pre += 1; w += g_bar * eta * (x_pre - alpha)',
-            post='x_post += 1; w += g_bar * eta * x_post')
+    #def build(self, connections, g_bar):
+        #eta = self.eta
+        #alpha = self.alpha
+        #assert eta, alpha  # suppress unused warnings
+        #return b.STDP(
+            #connections, eqs=self.eqs,
+            #pre='x_pre += 1; w += g_bar * eta * (x_pre - alpha)',
+            #post='x_post += 1; w += g_bar * eta * x_post')
 
 
 def tuning_function(subgroup_indices, peak):
@@ -134,21 +158,21 @@ if __name__ == '__main__':
     excitatory_connections, inhibitory_connections = connection_builder.build(
         groups, neuron)
 
-    stdp = ModelSTDPBuilder(config['model']).build(
-        inhibitory_connections, connection_builder.g_I_bar)
+    #stdp = ModelSTDPBuilder(config['model']).build(
+        #inhibitory_connections, connection_builder.g_I_bar)
 
     recording_duration = quantity(config['monitoring']['recording_duration'])
     M_E = b.RecentStateMonitor(neuron, 'I_E', recording_duration)
-    M_I = b.RecentStateMonitor(neuron, 'I_I', recording_duration)
+    #M_I = b.RecentStateMonitor(neuron, 'I_I', recording_duration)
     M_spikes = b.SpikeMonitor(neuron)
     M_rates = b.PopulationRateMonitor(neuron, 1.0 * b.second)
     M_weights = b.StateMonitor(inhibitory_connections, 'w', record=True)
-    M_excitatory_spikes = b.SpikeMonitor(groups.excitatory, record=True)
-    M_inhibitory_spikes = b.SpikeMonitor(groups.inhibitory, record=True)
+    M_inh_syn_currents = b.RecentStateMonitor(
+        inhibitory_connections, 'I', recording_duration)
 
     net = b.Network(
-        neuron, G, excitatory_connections, inhibitory_connections, stdp, M_E,
-        M_I, M_spikes, M_rates, M_weights)
+        neuron, G, excitatory_connections, inhibitory_connections, M_E,
+        M_spikes, M_rates, M_weights, M_inh_syn_currents)
 
     with tables.openFile(args.output[0], 'w') as outfile:
         outfile.setNodeAttr('/', 'config', config)
@@ -167,28 +191,14 @@ if __name__ == '__main__':
             times_arr.attrs.unit = "second"
             exc_arr = outfile.createArray(store_group, 'excitatory', M_E[0])
             exc_arr.attrs.unit = "amp"
-            inh_arr = outfile.createArray(store_group, 'inhibitory', M_I[0])
+            inh_arr = outfile.createArray(
+                store_group, 'inhibitory', M_inh_syn_currents.values)
             inh_arr.attrs.unit = "amp"
             outfile.flush()
 
         spike_arr = outfile.createArray(
             '/', 'spikes', M_spikes[0], "Spike times of model neuron.")
         spike_arr.attrs.unit = "second"
-        outfile.flush()
-
-        input_group = outfile.createGroup('/', 'input', "Incoming spikes.")
-        exc_spikes_arr = outfile.createArray(
-            input_group, 'excitatory', np.asarray(M_excitatory_spikes.spikes))
-        exc_spikes_arr.attrs.unit = "second"
-        inh_spikes_arr = outfile.createArray(
-            input_group, 'inhibitory', np.asarray(M_inhibitory_spikes.spikes))
-        inh_spikes_arr.attrs.unit = "second"
-        outfile.createArray(
-            input_group, 'exc_group_membership', groups.exc_group_membership,
-            "Indicates which excitatory neuron belongs to which group.")
-        outfile.createArray(
-            input_group, 'inh_group_membership', groups.inh_group_membership,
-            "Indicates which inhibitory neuron belongs to which group.")
         outfile.flush()
 
         rates_group = outfile.createGroup('/', 'rates', "Firing rates.")
@@ -201,7 +211,8 @@ if __name__ == '__main__':
         outfile.flush()
 
         weights_group = outfile.createGroup('/', 'weights', "Synaptic weights.")
-        weights_arr = outfile.createArray(weights_group, 'weights', M_weights)
+        weights_arr = outfile.createArray(
+            weights_group, 'weights', M_weights.values)
         weights_arr.attrs.unit = "siemens"
         times_arr = outfile.createArray(
             weights_group, 'times', M_weights.times,
