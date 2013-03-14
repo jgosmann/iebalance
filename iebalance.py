@@ -7,51 +7,90 @@ import numpy as np
 import numpy.random as rnd
 
 
-class ModelNeuronGroupBuilder(Configurable):
+class ModelBuilder(Configurable):
     def __init__(self, config):
         Configurable.__init__(self, config)
         self._add_config_value('tau', quantity)  # membrane time constant
         self._add_config_value('V_rest', quantity)  # resting membrane potential
-        self._add_config_value('Theta', quantity)  # spiking threshold
-        self._add_config_value('tau_ref', quantity)  # refractory period
+        self._add_config_value('threshold', quantity)  # spiking threshold
         self._add_config_value('g_leak', quantity)  # leak conductance
         self._add_config_value('refractory_period', quantity)
 
-        self._add_config_value('V_E', quantity)  # excitatory reversal potential
-        self._add_config_value('V_I', quantity)  # inhibitory reversal potential
-        self._add_config_value('tau_E', quantity)  # excitat. syn. time constant
-        self._add_config_value('tau_I', quantity)  # inhibit. syn. time constant
+        self._add_config_value('V_exc', quantity)  # excitatory reversal potential
+        self._add_config_value('V_inh', quantity)  # inhibitory reversal potential
         self._add_config_value('I_b', quantity)  # additional current
 
+        self._add_config_value('g_exc_bar', quantity)
+        self._add_config_value('g_inh_bar', quantity)
+        self._add_config_value('tau_exc', quantity)  # excitat. syn. time constant
+        self._add_config_value('tau_inh', quantity)  # inhibit. syn. time constant
         self._add_config_value('tau_stdp', quantity)
+        self._add_config_value('eta', float)
+        self._add_config_value('rho', quantity)
+
+        self.alpha = 2 * self.rho * self.tau_stdp
 
         self.eqs = b.Equations('''
-            I_E = g_E * (self.V_E - V) : amp
-            I_I : amp
-            dV/dt = ((self.V_rest - V) + (I_E + I_I + self.I_b) / self.g_leak) / \
-                self.tau : volt
-            dg_E/dt = -g_E / self.tau_E : siemens
+            I_exc : amp
+            I_inh : amp
+            dV/dt = ((self.V_rest - V) + (I_exc + I_inh + self.I_b) / \
+                self.g_leak) / self.tau : volt
             ''')
+        self.eqs_inh_synapse = '''
+            dxPre/dt = -xPre / self.tau_stdp : 1
+            dxPost/dt = -xPost / self.tau_stdp : 1
+            dg/dt = -g / self.tau_inh : siemens
+            I = g * (self.V_inh - V_post) : amp
+            w : 1
+            '''
+        self.eqs_exc_synapse = '''
+            dg/dt = -g / self.tau_exc : siemens
+            I = g * (self.V_exc - V_post) : amp
+            w : 1
+            '''
 
-    def build(self, N=1):
+    def build_neuron_group(self, num_neurons=1):
         return b.NeuronGroup(
-            N, model=self.eqs, reset=self.V_rest, threshold=self.Theta,
-            refractory=self.refractory_period)
+            num_neurons, model=self.eqs, reset=self.V_rest,
+            threshold=self.threshold, refractory=self.refractory_period)
+
+    def build_exc_synapses(self, source, target, tuning):
+        synapses = b.Synapses(
+            source, target, model=self.eqs_exc_synapse, pre='g += w')
+        synapses.w[:, :] = np.atleast_2d(self.g_exc_bar * tuning).T
+        synapses[:, :] = True
+        target.I_exc = synapses.I
+        return synapses
+
+    def build_inh_synapses(self, source, target):
+        eta = self.eta
+        alpha = self.alpha
+        g_inh_bar = self.g_inh_bar
+        assert eta and alpha and g_inh_bar  # suppress unused warnings
+
+        synapses = b.Synapses(
+            source, target, model=self.eqs_inh_synapse,
+            pre='xPre += 1; g += w; w += g_inh_bar * eta * (xPre - alpha)',
+            post='xPost += 1; w += g_inh_bar * eta * xPost')
+        synapses.w = 0.1 * g_inh_bar
+        synapses[:, :] = True
+        target.I_inh = synapses.I
+        return synapses
 
 
-class ModelGroups(object):
-    def __init__(self, indexing, in_group):
+class ModelInputGroups(object):
+    def __init__(self, indexing, input_group):
         for key in indexing.iterkeys():
             assert np.all(1 == np.diff(
                 [idx for group in indexing[key] for idx in group]))
             assert np.all(0 == np.diff([len(group) in group in indexing[key]]))
 
-        self.excitatory = in_group.subgroup(
+        self.excitatory = input_group.subgroup(
             sum(len(group) for group in indexing['excitatory']))
-        self.inhibitory = in_group.subgroup(
+        self.inhibitory = input_group.subgroup(
             sum(len(group) for group in indexing['inhibitory']))
 
-        self.ex_group_membership = np.hstack(
+        self.exc_group_membership = np.hstack(
             np.repeat(i, len(group))
             for i, group in enumerate(indexing['excitatory']))
         self.inh_group_membership = np.hstack(
@@ -59,73 +98,116 @@ class ModelGroups(object):
             for i, group in enumerate(indexing['excitatory']))
 
 
-class ModelConnectionBuilder(Configurable):
+class SingleCellModel(b.Network):
     def __init__(self, config):
+        b.Network.__init__(self)
+
+        builder = ModelBuilder(config['model'])
+        self.input_gen = inputs.GroupedSpikeTimesGenerator(config['inputs'])
+        self.indexing_scheme = self.input_gen.get_indexing_scheme()
+
+        self.neuron = builder.build_neuron_group()
+        self.input_neurons = b.SpikeGeneratorGroup(
+            self.input_gen.num_trains, inputs.swap_tuple_values(self.input_gen))
+        self.input_groups = ModelInputGroups(
+            self.indexing_scheme, self.input_neurons)
+        self.exc_synapses = builder.build_exc_synapses(
+            self.input_groups.excitatory, self.neuron,
+            self.tuning_function(self.input_groups.exc_group_membership, 5))
+        self.inh_synapses = builder.build_inh_synapses(
+            self.input_groups.inhibitory, self.neuron)
+
+        self.add(
+            self.neuron, self.input_neurons, self.inh_synapses,
+            self.exc_synapses)
+
+    @staticmethod
+    def tuning_function(subgroup_indices, peak):
+        return 0.3 + rnd.rand(*subgroup_indices.shape) / 10.0 + \
+            1.1 / (1.0 + (subgroup_indices + 1 - peak) ** 4)
+
+
+class SingleCellModelRecorder(Configurable):
+    def __init__(self, config, model):
         Configurable.__init__(self, config)
-        self._add_config_value('g_E_bar', quantity)
-        self._add_config_value('g_I_bar', quantity)
-        self._add_config_value('tau_stdp', quantity)
-        self._add_config_value('tau_I', quantity)  # inhibit. syn. time constant
-        self._add_config_value('eta', float)
-        self._add_config_value('rho', quantity)
-        self._add_config_value('V_E', quantity)  # excitatory reversal potential
-        self._add_config_value('V_I', quantity)  # inhibitory reversal potential
-        self.alpha = 2 * self.rho * self.tau_stdp
-        self.eqs = '''
-            dxPre/dt = -xPre / self.tau_stdp : 1
-            dxPost/dt = -xPost / self.tau_stdp : 1
-            dg/dt = -g / self.tau_I : siemens
-            I = g * (self.V_I - V_post) : amp
-            w : 1
-            '''
+        self._add_config_value('recording_duration', quantity)
+        self._add_config_value('rate_bin_size', quantity)
+        self._add_config_value('store_times', quantity_list)
+        self.model = model
 
-    def build(self, groups, out_neuron):
-        excitatory_connections = b.Connection(
-            groups.excitatory, out_neuron, 'g_E')
-        excitatory_connections.connect(
-            groups.excitatory, neuron, self.g_E_bar *
-            np.atleast_2d(tuning_function(groups.ex_group_membership, 5)).T)
+        self.m_spikes = b.SpikeMonitor(model.neuron)
+        self.m_rates = b.PopulationRateMonitor(model.neuron, self.rate_bin_size)
+        self.m_exc_syn_currents = b.RecentStateMonitor(
+            model.exc_synapses, 'I', self.recording_duration)
+        self.m_inh_syn_currents = b.RecentStateMonitor(
+            model.inh_synapses, 'I', self.recording_duration)
+        self.m_inh_weights = b.StateMonitor(
+            model.inh_synapses, 'w', record=True)
 
-        eta = self.eta
-        alpha = self.alpha
-        g_I_bar = self.g_I_bar
-        assert (eta, alpha, g_I_bar)  # suppress unused warnings
+        self.model.add(
+            self.m_spikes, self.m_rates, self.m_exc_syn_currents,
+            self.m_inh_syn_currents, self.m_inh_weights)
 
-        inhibitory_connections = b.Synapses(
-            groups.inhibitory, out_neuron, model=self.eqs,
-            pre='xPre += 1; g += w; w += g_I_bar * eta * (xPre - alpha)',
-            post='xPost += 1; w += g_I_bar * eta * xPost')
-        inhibitory_connections.w = 0.1 * self.g_I_bar
-        inhibitory_connections[:, :] = True
-        out_neuron.I_I = inhibitory_connections.I
-        return excitatory_connections, inhibitory_connections
+    def record(self, outfile):
+        time_passed = 0 * b.second
+        for i, time in enumerate(self.store_times):
+            print i  # TODO: use logger
+            self.model.run(time - time_passed)
+            time_passed = time
+            self._store_recent_currents(outfile, i)
+            outfile.flush()
 
+        self._store_rates(outfile)
+        self._store_spikes(outfile)
+        self._store_weights(outfile)
+        outfile.flush()
 
-#class ModelSTDPBuilder(Configurable):
-    #def __init__(self, config):
-        #Configurable.__init__(self, config)
-        #self._add_config_value('tau_stdp', quantity)
-        #self._add_config_value('eta', float)
-        #self._add_config_value('rho', quantity)
-        #self.alpha = 2 * self.rho * self.tau_stdp
-        #self.eqs = '''
-            #dx_pre/dt = -x_pre / self.tau_stdp : 1
-            #dx_post/dt = -x_post / self.tau_stdp : 1
-            #'''
+    @staticmethod
+    def _store_array_with_unit(
+            outfile, where, name, array, unit, *args, **kwargs):
+        node = outfile.createArray(where, name, array, *args, **kwargs)
+        node.attrs.unit = unit
+        return node
 
-    #def build(self, connections, g_bar):
-        #eta = self.eta
-        #alpha = self.alpha
-        #assert eta, alpha  # suppress unused warnings
-        #return b.STDP(
-            #connections, eqs=self.eqs,
-            #pre='x_pre += 1; w += g_bar * eta * (x_pre - alpha)',
-            #post='x_post += 1; w += g_bar * eta * x_post')
+    def _store_rates(self, outfile):
+        group = outfile.createGroup('/', 'rates', "Firing rates.")
+        self._store_array_with_unit(
+            outfile, group, 'rates', self.m_rates.rate / b.hertz, 'hertz')
+        self._store_array_with_unit(
+            outfile, group, 'times', self.m_rates.times / b.second, 'second',
+            "Times of the firing rate estimation bins.")
 
+    def _store_recent_currents(self, outfile, interval_index):
+        from numpy.testing import assert_allclose
+        assert_allclose(
+            self.m_exc_syn_currents.times, self.m_inh_syn_currents.times)
 
-def tuning_function(subgroup_indices, peak):
-    return 0.3 + rnd.rand(*subgroup_indices.shape) / 10.0 + \
-        1.1 / (1.0 + (subgroup_indices + 1 - peak) ** 4)
+        group = outfile.createGroup(
+            '/currents', 't' + str(interval_index), createparents=True)
+        self._store_array_with_unit(
+            outfile, group, 'times', self.m_exc_syn_currents.times / b.second,
+            'second')
+        self._store_array_with_unit(
+            outfile, group, 'excitatory',
+            self.m_exc_syn_currents.values / b.amp, 'amp')
+        self._store_array_with_unit(
+            outfile, group, 'inhibitory',
+            self.m_inh_syn_currents.values / b.amp, 'amp')
+
+    def _store_spikes(self, outfile):
+        self._store_array_with_unit(
+            outfile, '/', 'spikes', self.m_spikes[0], 'second'
+            "Spike times of model neuron.")
+
+    def _store_weights(self, outfile):
+        weight_group = outfile.createGroup('/', 'weights', "Synaptic weights.")
+        group = outfile.createGroup(weight_group, 'inhibitory')
+        self._store_array_with_unit(
+            outfile, group, 'weights', self.m_inh_weights.values / b.siemens,
+            'siemens')
+        self._store_array_with_unit(
+            outfile, group, 'times', self.m_inh_weights.times / b.second,
+            'second', "Times of the recorded synaptic weights.")
 
 
 if __name__ == '__main__':
@@ -146,76 +228,9 @@ if __name__ == '__main__':
     with open(args.config[0], 'r') as f:
         config = json.load(f)
 
-    neuron = ModelNeuronGroupBuilder(config['model']).build()
-
-    generator = inputs.GroupedSpikeTimesGenerator(config['inputs'])
-    N = config['inputs']['num_trains']
-    G = b.SpikeGeneratorGroup(N, inputs.swap_tuple_values(generator))
-
-    indexing_scheme = generator.get_indexing_scheme()
-    connection_builder = ModelConnectionBuilder(config['model'])
-    groups = ModelGroups(indexing_scheme, G)
-    excitatory_connections, inhibitory_connections = connection_builder.build(
-        groups, neuron)
-
-    #stdp = ModelSTDPBuilder(config['model']).build(
-        #inhibitory_connections, connection_builder.g_I_bar)
-
-    recording_duration = quantity(config['monitoring']['recording_duration'])
-    M_E = b.RecentStateMonitor(neuron, 'I_E', recording_duration)
-    #M_I = b.RecentStateMonitor(neuron, 'I_I', recording_duration)
-    M_spikes = b.SpikeMonitor(neuron)
-    M_rates = b.PopulationRateMonitor(neuron, 1.0 * b.second)
-    M_weights = b.StateMonitor(inhibitory_connections, 'w', record=True)
-    M_inh_syn_currents = b.RecentStateMonitor(
-        inhibitory_connections, 'I', recording_duration)
-
-    net = b.Network(
-        neuron, G, excitatory_connections, inhibitory_connections, M_E,
-        M_spikes, M_rates, M_weights, M_inh_syn_currents)
+    model = SingleCellModel(config)
+    recorder = SingleCellModelRecorder(config['recording'], model)
 
     with tables.openFile(args.output[0], 'w') as outfile:
         outfile.setNodeAttr('/', 'config', config)
-
-        currents_group = outfile.createGroup(
-            '/', 'currents', "Recorded currents")
-
-        time_passed = 0 * b.second
-        store_times = quantity_list(config['monitoring']['store_times'])
-        for i, time in enumerate(store_times):
-            print i
-            net.run(time - time_passed)
-            time_passed = time
-            store_group = outfile.createGroup(currents_group, 't' + str(i))
-            times_arr = outfile.createArray(store_group, 'times', M_E.times)
-            times_arr.attrs.unit = "second"
-            exc_arr = outfile.createArray(store_group, 'excitatory', M_E[0])
-            exc_arr.attrs.unit = "amp"
-            inh_arr = outfile.createArray(
-                store_group, 'inhibitory', M_inh_syn_currents.values)
-            inh_arr.attrs.unit = "amp"
-            outfile.flush()
-
-        spike_arr = outfile.createArray(
-            '/', 'spikes', M_spikes[0], "Spike times of model neuron.")
-        spike_arr.attrs.unit = "second"
-        outfile.flush()
-
-        rates_group = outfile.createGroup('/', 'rates', "Firing rates.")
-        rates_arr = outfile.createArray(rates_group, 'rates', M_rates.rate)
-        rates_arr.attrs.unit = "hertz"
-        times_arr = outfile.createArray(
-            rates_group, 'times', M_rates.times,
-            "Times of the firing rate estimation bins.")
-        times_arr.attrs.unit = "second"
-        outfile.flush()
-
-        weights_group = outfile.createGroup('/', 'weights', "Synaptic weights.")
-        weights_arr = outfile.createArray(
-            weights_group, 'weights', M_weights.values)
-        weights_arr.attrs.unit = "siemens"
-        times_arr = outfile.createArray(
-            weights_group, 'times', M_weights.times,
-            "Times of the recorded synaptic weights.")
-        times_arr.attrs.unit = "second"
-        outfile.flush()
+        recorder.record(outfile)
