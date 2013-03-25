@@ -3,8 +3,12 @@
 from config import Configurable, quantity, quantity_list
 import brian as b
 import inputs
+import logging
 import numpy as np
 import numpy.random as rnd
+
+
+logger = logging.getLogger('single-cell')
 
 
 class ModelBuilder(Configurable):
@@ -154,7 +158,9 @@ class SingleCellModelRecorder(Configurable):
 
         time_passed = 0 * b.second
         for i, time in enumerate(self.store_times):
-            print i  # TODO: use logger
+            logger.info(
+                'Running time interval %i (duration %ds, end time %ds)',
+                i, time - time_passed, time)
             self.model.run(time - time_passed, report='text')
             time_passed = time
             self._store_recent_currents(outfile, i)
@@ -224,6 +230,9 @@ if __name__ == '__main__':
     import argparse
     import json
     import tables
+
+    logging.basicConfig()
+    logger.setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser(
         description="Run the Vogels et al. 2011 single cell model.")
