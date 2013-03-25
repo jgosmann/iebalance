@@ -57,8 +57,8 @@ class ModelBuilder(Configurable):
     def build_exc_synapses(self, source, target, tuning):
         synapses = b.Synapses(
             source, target, model=self.eqs_exc_synapse, pre='g += w')
-        synapses.w[:, :] = np.atleast_2d(self.g_exc_bar * tuning).T
         synapses[:, :] = True
+        synapses.w[:, :] = np.atleast_2d(self.g_exc_bar * tuning).T
         target.I_exc = synapses.I
         return synapses
 
@@ -72,8 +72,8 @@ class ModelBuilder(Configurable):
             source, target, model=self.eqs_inh_synapse,
             pre='xPre += 1; g += w; w += g_inh_bar * eta * (xPre - alpha)',
             post='xPost += 1; w += g_inh_bar * eta * xPost')
-        synapses.w = 0.1 * g_inh_bar
         synapses[:, :] = True
+        synapses.w = 0.1 * g_inh_bar
         target.I_inh = synapses.I
         return synapses
 
@@ -95,7 +95,7 @@ class ModelInputGroups(object):
             for i, group in enumerate(indexing['excitatory']))
         self.inh_group_membership = np.hstack(
             np.repeat(i, len(group))
-            for i, group in enumerate(indexing['excitatory']))
+            for i, group in enumerate(indexing['inhibitory']))
 
 
 class SingleCellModel(b.Network):
@@ -149,6 +149,9 @@ class SingleCellModelRecorder(Configurable):
             self.m_inh_syn_currents, self.m_inh_weights)
 
     def record(self, outfile):
+        self._store_group_memberships(outfile)
+        outfile.flush()
+
         time_passed = 0 * b.second
         for i, time in enumerate(self.store_times):
             print i  # TODO: use logger
@@ -176,6 +179,13 @@ class SingleCellModelRecorder(Configurable):
         self._store_array_with_unit(
             outfile, group, 'times', self.m_rates.times / b.second, 'second',
             "Times of the firing rate estimation bins.")
+
+    def _store_group_memberships(self, outfile):
+        group = outfile.createGroup('/', 'group_memberships')
+        outfile.createArray(
+            group, 'inhibitory', self.model.input_groups.inh_group_membership)
+        outfile.createArray(
+            group, 'excitatory', self.model.input_groups.exc_group_membership)
 
     def _store_recent_currents(self, outfile, interval_index):
         from numpy.testing import assert_allclose
