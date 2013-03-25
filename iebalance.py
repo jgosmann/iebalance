@@ -155,7 +155,7 @@ class SingleCellModelRecorder(Configurable):
         time_passed = 0 * b.second
         for i, time in enumerate(self.store_times):
             print i  # TODO: use logger
-            self.model.run(time - time_passed)
+            self.model.run(time - time_passed, report='text')
             time_passed = time
             self._store_recent_currents(outfile, i)
             outfile.flush()
