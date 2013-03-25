@@ -21,8 +21,8 @@
     },
 
     "recording": {
-        "recording_duration": [0.5, "second"],
-        "store_times": [[2, 4, 6], "second"],
+        "recording_duration": [4, "second"],
+        "store_times": [[4, 50, 150], "second"],
         "rate_bin_size": [2, "second"]
     },
 
