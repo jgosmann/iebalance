@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from config import Configurable, quantity, quantity_list
+from config import Configurable, EquationString, quantity, quantity_list
 import brian as b
 import inputs
 import logging
@@ -39,14 +39,10 @@ class ModelBuilder(Configurable):
             I_inh : amp
             dV/dt = ((self.V_rest - V) + (I_exc + I_inh + self.I_b) / \
                 self.g_leak) / self.tau : volt
+            dx/dt = -x / self.tau_stdp : 1
             ''')
-        self.eqs_inh_synapse = '''
-            dxPre/dt = -xPre / self.tau_stdp : 1
-            dxPost/dt = -xPost / self.tau_stdp : 1
-            dg/dt = -g / self.tau_inh : siemens
-            I = g * (self.V_inh - V_post) : amp
-            w : 1
-            '''
+        self.eqs_inh_synapse = SynapsesEquations(
+            config['synapses']['inhibitory'])
         self.eqs_exc_synapse = '''
             dg/dt = -g / self.tau_exc : siemens
             I = g * (self.V_exc - V_post) : amp
@@ -67,19 +63,30 @@ class ModelBuilder(Configurable):
         return synapses
 
     def build_inh_synapses(self, source, target):
-        eta = self.eta
         alpha = self.alpha
+        eta = self.eta
         g_inh_bar = self.g_inh_bar
-        assert eta and alpha and g_inh_bar  # suppress unused warnings
+        tau_inh = self.tau_inh
+        tau_stdp = self.tau_stdp
+        E = self.V_inh
+        # suppress unused warnings
+        assert alpha and eta and g_inh_bar and tau_inh and tau_stdp and E
 
         synapses = b.Synapses(
-            source, target, model=self.eqs_inh_synapse,
-            pre='xPre += 1; g += w; w += g_inh_bar * eta * (xPost - alpha)',
-            post='xPost += 1; w += g_inh_bar * eta * xPre')
+            source, target, model=self.eqs_inh_synapse.equations,
+            pre=self.eqs_inh_synapse.pre, post=self.eqs_inh_synapse.post)
         synapses[:, :] = True
         synapses.w = 0.1 * g_inh_bar
         target.I_inh = synapses.I
         return synapses
+
+
+class SynapsesEquations(Configurable):
+    def __init__(self, config):
+        Configurable.__init__(self, config)
+        self._add_config_value('equations', EquationString('\n'))
+        self._add_config_value('pre', EquationString('; '))
+        self._add_config_value('post', EquationString('; '))
 
 
 class ModelInputGroups(object):
