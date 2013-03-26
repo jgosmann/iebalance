@@ -137,16 +137,21 @@ class SingleCellModelRecorder(Configurable):
         self._add_config_value('recording_duration', quantity)
         self._add_config_value('rate_bin_size', quantity)
         self._add_config_value('store_times', quantity_list)
+        self._add_config_value('current_timestep', int)
+        self._add_config_value('weights_timestep', int)
         self.model = model
 
         self.m_spikes = b.SpikeMonitor(model.neuron)
         self.m_rates = b.PopulationRateMonitor(model.neuron, self.rate_bin_size)
         self.m_exc_syn_currents = b.RecentStateMonitor(
-            model.exc_synapses, 'I', self.recording_duration)
+            model.exc_synapses, 'I', self.recording_duration,
+            timestep=self.current_timestep)
         self.m_inh_syn_currents = b.RecentStateMonitor(
-            model.inh_synapses, 'I', self.recording_duration)
+            model.inh_synapses, 'I', self.recording_duration,
+            timestep=self.current_timestep)
         self.m_inh_weights = b.StateMonitor(
-            model.inh_synapses, 'w', record=True)
+            model.inh_synapses, 'w', record=True,
+            timestep=self.weights_timestep)
 
         self.model.add(
             self.m_spikes, self.m_rates, self.m_exc_syn_currents,
