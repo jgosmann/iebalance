@@ -42,7 +42,7 @@
 
     "recording": {
         "recording_duration": [4, "second"],
-        "store_times": [[4, 6, 8], "second"],
+        "store_times": [[4, 100, 250], "second"],
         "rate_bin_size": [2, "second"],
         "current_timestep": 10,
         "weights_timestep": 10000
