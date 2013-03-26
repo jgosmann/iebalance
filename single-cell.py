@@ -74,8 +74,8 @@ class ModelBuilder(Configurable):
 
         synapses = b.Synapses(
             source, target, model=self.eqs_inh_synapse,
-            pre='xPre += 1; g += w; w += g_inh_bar * eta * (xPre - alpha)',
-            post='xPost += 1; w += g_inh_bar * eta * xPost')
+            pre='xPre += 1; g += w; w += g_inh_bar * eta * (xPost - alpha)',
+            post='xPost += 1; w += g_inh_bar * eta * xPre')
         synapses[:, :] = True
         synapses.w = 0.1 * g_inh_bar
         target.I_inh = synapses.I
