@@ -17,7 +17,28 @@
 
         "tau_stdp": [20, "msecond"],
         "eta": 1e-4,
-        "rho": [5, "hertz"]
+        "rho": [5, "hertz"],
+
+        "synapses": {
+            "inhibitory": {
+                "equations": [
+                    "dxPre/dt = -xPre / tau_stdp : 1",
+                    "dxPost/dt = -xPost / tau_stdp : 1",
+                    "dg/dt = -g / tau_inh : siemens",
+                    "I = g * (E - V_post) : amp",
+                    "w : 1"
+                ],
+                "pre": [
+                    "xPre += 1",
+                    "g += w",
+                    "w += g_inh_bar * eta * (xPost - alpha)"
+                ],
+                "post": [
+                    "xPost += 1",
+                    "w += g_inh_bar * eta * xPre"
+                ]
+            }
+        }
     },
 
     "recording": {

@@ -1,6 +1,14 @@
 import brian.units
 
 
+class EquationString(object):
+    def __init__(self, separator):
+        self.separator = separator
+
+    def __call__(self, equations):
+        return str(self.separator.join(equations))
+
+
 def quantity((magnitude, unit)):
     return magnitude * getattr(brian.units, unit)
 
