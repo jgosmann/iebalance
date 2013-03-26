@@ -20,4 +20,5 @@ fi
 
 shift
 smt run -r "$reason" \
+    -e /extra/gosmann/pythonenv/bin/python \
     -l "${prefix}-${timestamp}" -m "$mainfile" -- $*
