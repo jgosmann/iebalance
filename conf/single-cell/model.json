@@ -23,7 +23,6 @@
             "inhibitory": {
                 "equations": [
                     "dxPre/dt = -xPre / tau_stdp : 1",
-                    "dxPost/dt = -xPost / tau_stdp : 1",
                     "dg/dt = -g / tau_inh : siemens",
                     "I = g * (E - V_post) : amp",
                     "w : 1"
@@ -31,10 +30,10 @@
                 "pre": [
                     "xPre += 1",
                     "g += w",
-                    "w += g_inh_bar * eta * (xPost - alpha)"
+                    "w += g_inh_bar * eta * (x_post - alpha)"
                 ],
                 "post": [
-                    "xPost += 1",
+                    "x_post += 1",
                     "w += g_inh_bar * eta * xPre"
                 ]
             }

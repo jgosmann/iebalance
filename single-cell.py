@@ -39,6 +39,7 @@ class ModelBuilder(Configurable):
             I_inh : amp
             dV/dt = ((self.V_rest - V) + (I_exc + I_inh + self.I_b) / \
                 self.g_leak) / self.tau : volt
+            dx/dt = -x / self.tau_stdp : 1
             ''')
         self.eqs_inh_synapse = SynapsesEquations(
             config['synapses']['inhibitory'])
