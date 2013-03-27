@@ -25,12 +25,12 @@
                     "dxPre/dt = -xPre / tau_stdp : 1",
                     "dg/dt = -g / tau_inh : siemens",
                     "I = g * (E - V_post) : amp",
-                    "dw/dt = -w / (500 * msecond) : 1"
+                    "w : 1"
                 ],
                 "pre": [
                     "xPre += 1",
                     "g += w",
-                    "w += g_inh_bar * eta * x_post"
+                    "w += g_inh_bar * eta * (x_post - w / 500 / msecond)"
                 ],
                 "post": [
                     "x_post += 1",
