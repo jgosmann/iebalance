@@ -242,6 +242,8 @@ if __name__ == '__main__':
     import argparse
     import json
     import tables
+    from brian.globalprefs import set_global_preferences
+    set_global_preferences(useweave=True)
 
     logging.basicConfig()
     logger.setLevel(logging.INFO)
