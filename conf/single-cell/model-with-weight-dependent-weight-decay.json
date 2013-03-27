@@ -16,7 +16,7 @@
         "g_inh_bar": [350, "psiemens"],
 
         "tau_stdp": [20, "msecond"],
-        "eta": 1e-4,
+        "eta": 1e-3,
         "rho": [5, "hertz"],
 
         "synapses": {
