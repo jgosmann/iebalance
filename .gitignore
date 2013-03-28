@@ -1,4 +1,5 @@
 *.pyc
+.python.cmd
 .smt
 Archive
 Data

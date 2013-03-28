@@ -1,10 +1,11 @@
 #!/bin/zsh
 if [[ $# -lt 1 ]]; then
-    echo "Usage: $0 <file to run> [additional arguments ...]" >&2
+    echo "Usage: $0 <file to run> <label> [additional arguments ...]" >&2
     exit -1
 fi
 
 mainfile=$1
+label=$2
 timestamp=`date +%Y%m%d-%H%M%S`
 prefix=${mainfile:t:r}
 
@@ -18,7 +19,12 @@ if [[ -z "$reason" ]]; then
     exit -1
 fi
 
-shift
-smt run -r "$reason" \
-    -e /extra/gosmann/pythonenv/bin/python \
-    -l "${prefix}-${timestamp}" -m "$mainfile" -- $*
+python='python'
+if [[ -f '.python.cmd' ]]; then
+    python=`cat .python.cmd`
+fi
+
+shift 2
+smt configure -l "$label"
+smt run -r "$reason" -e "$python" \
+    -l "${prefix}-${label}-${timestamp}" -m "$mainfile" -- $*
