@@ -25,6 +25,5 @@ if [[ -f '.python.cmd' ]]; then
 fi
 
 shift 2
-smt configure -l "$label"
 smt run -r "$reason" -e "$python" \
     -l "${prefix}-${label}-${timestamp}" -m "$mainfile" -- $*
