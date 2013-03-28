@@ -262,7 +262,7 @@ if __name__ == '__main__':
     with open(args.config[0], 'r') as f:
         config = json.load(f)
 
-    b.defaultclock.dt = quantity(config['inputs']['raw_signals']['dt'])
+    b.defaultclock.dt = quantity(config['dt'])
     model = SingleCellModel(config)
     recorder = SingleCellModelRecorder(config['recording'], model)
 
