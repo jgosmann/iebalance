@@ -72,6 +72,7 @@ class ModelBuilder(Configurable):
         exp = np.exp
         # suppress unused warnings
         assert alpha and eta and g_inh_bar and tau_inh and tau_stdp and E
+        assert exp
 
         synapses = b.Synapses(
             source, target, model=self.eqs_inh_synapse.equations,
@@ -242,6 +243,8 @@ class SingleCellModelRecorder(Configurable):
 if __name__ == '__main__':
     import argparse
     import json
+    import os
+    import os.path
     import tables
     from brian.globalprefs import set_global_preferences
     set_global_preferences(useweave=True)
@@ -256,8 +259,17 @@ if __name__ == '__main__':
         help="Path to the configuration file.")
     parser.add_argument(
         'output', nargs=1, type=str,
-        help="Path ot the HDF5 output file.")
+        help="Filename of the HDF5 output file.")
+    parser.add_argument(
+        'label', nargs='?', type=str,
+        help="Label for the simulation. Will create a directory with the same "
+        + "to store the produced data.")
     args = parser.parse_args()
+
+    outpath = 'Data'
+    if args.label is not None:
+        outpath = os.path.join(outpath, args.label)
+    os.mkdirs(outpath)
 
     with open(args.config[0], 'r') as f:
         config = json.load(f)
@@ -265,6 +277,6 @@ if __name__ == '__main__':
     model = SingleCellModel(config)
     recorder = SingleCellModelRecorder(config['recording'], model)
 
-    with tables.openFile(args.output[0], 'w') as outfile:
+    with tables.openFile(os.path.join(outpath, args.output[0]), 'w') as outfile:
         outfile.setNodeAttr('/', 'config', config)
         recorder.record(outfile)
