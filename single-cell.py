@@ -243,7 +243,6 @@ class SingleCellModelRecorder(Configurable):
 if __name__ == '__main__':
     import argparse
     import json
-    import os
     import os.path
     import tables
     from brian.globalprefs import set_global_preferences
@@ -269,7 +268,6 @@ if __name__ == '__main__':
     outpath = 'Data'
     if args.label is not None:
         outpath = os.path.join(outpath, args.label)
-    os.makedirs(outpath)
 
     with open(args.config[0], 'r') as f:
         config = json.load(f)
