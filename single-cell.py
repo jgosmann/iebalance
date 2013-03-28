@@ -69,6 +69,7 @@ class ModelBuilder(Configurable):
         tau_inh = self.tau_inh
         tau_stdp = self.tau_stdp
         E = self.V_inh
+        exp = np.exp
         # suppress unused warnings
         assert alpha and eta and g_inh_bar and tau_inh and tau_stdp and E
 
