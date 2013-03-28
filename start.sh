@@ -10,6 +10,9 @@ timestamp=`date +%Y%m%d-%H%M%S`
 prefix=${mainfile:t:r}
 
 reasonfile=`mktemp reason.XXXXXX`
+if [[ -f 'reason.txt' ]]; then
+    cp 'reason.txt' "$reasonfile"
+fi
 ${EDITOR:-vi} "$reasonfile"
 reason=`cat "$reasonfile"`
 rm "$reasonfile"
