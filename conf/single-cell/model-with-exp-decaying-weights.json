@@ -43,11 +43,11 @@
     },
 
     "recording": {
-        "recording_duration": [4, "second"],
-        "store_times": [[4, 100, 250], "second"],
+        "recording_duration": [2, "second"],
+        "store_times": [[2, 7, 20], "second"],
         "rate_bin_size": [2, "second"],
-        "current_timestep": 10,
-        "weights_timestep": 10000
+        "current_timestep": 1,
+        "weights_timestep": 1000
     },
 
     "inputs": {
