@@ -26,6 +26,7 @@ class ModelBuilder(Configurable):
 
         self._add_config_value('g_exc_bar', quantity)
         self._add_config_value('g_inh_bar', quantity)
+        self._add_config_value('init_inh_w', quantity)
         self._add_config_value('tau_exc', quantity)  # excitat. syn. time constant
         self._add_config_value('tau_inh', quantity)  # inhibit. syn. time constant
         self._add_config_value('tau_stdp', quantity)
@@ -78,7 +79,7 @@ class ModelBuilder(Configurable):
             source, target, model=self.eqs_inh_synapse.equations,
             pre=self.eqs_inh_synapse.pre, post=self.eqs_inh_synapse.post)
         synapses[:, :] = True
-        synapses.w = 0.1 * g_inh_bar
+        synapses.w = self.init_inh_w
         target.I_inh = synapses.I
         return synapses
 
