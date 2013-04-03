@@ -1,4 +1,6 @@
 {
+    "dt": [0.1, "msecond"],
+
     "model": {
         "tau": [20, "msecond"],
         "V_rest": [-60, "mvolt"],
