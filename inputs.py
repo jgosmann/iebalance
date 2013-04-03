@@ -89,7 +89,7 @@ class PoissonSpikeTimesGenerator(object):
         t_starts = np.maximum(
             self.signal_gen.current_time,
             self.last_spikes + self.refractory_period)
-        signal = self.signal_gen.next_interval(500 * brian.msecond)
+        signal = self.signal_gen.next_interval(4 * brian.second)
         t_stop = self.signal_gen.current_time
         trains = [self.gen_spike_train(signal, t_starts[i], t_stop).rescale(
             pq.s).magnitude for i in xrange(len(self.neuron_indices))]
