@@ -1,5 +1,7 @@
+*.param
 *.pyc
 .python.cmd
 .smt
 Archive
 Data
+reason.txt
