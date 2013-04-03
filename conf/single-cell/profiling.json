@@ -1,0 +1,67 @@
+{
+    "dt": [0.1, "msecond"],
+
+    "model": {
+        "tau": [20, "msecond"],
+        "V_rest": [-60, "mvolt"],
+        "threshold": [-50, "mvolt"],
+        "tau_ref": [5, "msecond"],
+        "g_leak": [10, "nsiemens"],
+        "refractory_period": [5, "msecond"],
+        "V_exc": [0, "mvolt"],
+        "V_inh": [-80, "mvolt"],
+        "tau_exc": [5, "msecond"],
+        "tau_inh": [10, "msecond"],
+        "I_b": [0, "amp"],
+
+        "g_exc_bar": [140, "psiemens"],
+        "g_inh_bar": [350, "psiemens"],
+
+        "tau_stdp": [20, "msecond"],
+        "eta": 1e-3,
+        "rho": [5, "hertz"],
+
+        "synapses": {
+            "inhibitory": {
+                "equations": [
+                    "dxPre/dt = -xPre / tau_stdp : 1",
+                    "dg/dt = -g / tau_inh : siemens",
+                    "I = g * (E - V_post) : amp",
+                    "w : 1"
+                ],
+                "pre": [
+                    "xPre += 1",
+                    "g += w",
+                    "w += g_inh_bar * eta * (x_post - alpha)"
+                ],
+                "post": [
+                    "x_post += 1",
+                    "w += g_inh_bar * eta * xPre"
+                ]
+            }
+        }
+    },
+
+    "recording": {
+        "recording_duration": [4, "second"],
+        "store_times": [[4, 6, 8], "second"],
+        "rate_bin_size": [2, "second"],
+        "current_timestep": 10,
+        "weights_timestep": 10000
+    },
+
+    "inputs": {
+        "num_tunings": 8,
+        "num_trains": 1000,
+        "fraction_inhibitory": 0.2,
+        "refractory_period": [5, "msecond"],
+        "raw_signals": {
+            "peak_firing_rate": [500, "hertz"],
+            "background_activity": [5, "hertz"],
+            "sparseness": 2,
+            "approximate_normalization": 0.03,
+            "filter_time_constant": [50, "msecond"],
+            "dt": [0.1, "msecond"]
+        }
+    }
+}
