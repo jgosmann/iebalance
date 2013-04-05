@@ -31,8 +31,10 @@ class ModelRateRecorder(Configurable):
             self.model.add(self.m_spike_count)
             time_passed = time
 
-        return [self.model.tau_w, self.m_spike_count.nspikes /
-                (time_passed - self.store_times[0])]
+        return [float(self.model.tau_w / b.second),
+                float(
+                    self.m_spike_count.nspikes /
+                    (time_passed - self.store_times[0]) / b.hertz)]
 
 
 def run_simulation(tau_w):
@@ -88,6 +90,7 @@ if __name__ == '__main__':
     b.defaultclock.dt = quantity(config['dt'])
     data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation)(tau_w)
                                          for tau_w in tau_ws)
+    print data
 
     with tables.openFile(os.path.join(outpath, args.output[0]), 'w') as outfile:
         outfile.setNodeAttr('/', 'config', config)
