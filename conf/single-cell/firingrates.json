@@ -30,7 +30,7 @@
                     "dxPre/dt = -xPre / tau_stdp : 1",
                     "dg/dt = -g / tau_inh : siemens",
                     "I = g * (E - V_post) : amp",
-                    "dw/dt = -eta * w / (tau_w * second) : 1"
+                    "dw/dt = -eta * w / tau_w : 1"
                 ],
                 "pre": [
                     "xPre += 1",
