@@ -30,6 +30,7 @@ class ModelBuilder(Configurable):
         self._add_config_value('tau_exc', quantity)  # excitat. syn. time constant
         self._add_config_value('tau_inh', quantity)  # inhibit. syn. time constant
         self._add_config_value('tau_stdp', quantity)
+        self._add_config_value('tau_w', quantity)
         self._add_config_value('eta', float)
         self._add_config_value('rho', quantity)
 
@@ -69,11 +70,12 @@ class ModelBuilder(Configurable):
         g_inh_bar = self.g_inh_bar
         tau_inh = self.tau_inh
         tau_stdp = self.tau_stdp
+        tau_w = self.tau_w
         E = self.V_inh
         exp = np.exp
         # suppress unused warnings
-        assert alpha and eta and g_inh_bar and tau_inh and tau_stdp and E
-        assert exp
+        assert alpha and eta and g_inh_bar and tau_inh and tau_stdp and tau_w
+        assert E and exp
 
         synapses = b.Synapses(
             source, target, model=self.eqs_inh_synapse.equations,
