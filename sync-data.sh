@@ -9,7 +9,9 @@ if [[ -z `ls $remote` ]]; then
     sshfs compute3:/extra/gosmann "$remote"
 fi
 
-rsync -rtuvz "$remote/iebalance/Archive" "$p"
-for file in `ls $archive`; do
-    tar -xvz -f "$archive/$file" --keep-newer-files --strip-components 1 -C "$data"
+files=`rsync -rtuvz "$remote/iebalance/Archive" "$p"`
+for file in "(${(ps:\n:)${files}})"; do
+    if [[ -f "$file" ]]; then
+        tar -xvz -f "$file" --keep-newer-files --strip-components 1 -C "$data"
+    fi
 done
