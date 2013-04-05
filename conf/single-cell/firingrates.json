@@ -18,6 +18,7 @@
         "g_exc_bar": [140, "psiemens"],
         "g_inh_bar": [350, "psiemens"],
         "init_inh_w": [150, "psiemens"],
+        "tau_w": [1.2, "second"],
 
         "tau_stdp": [20, "msecond"],
         "eta": 1e-2,
