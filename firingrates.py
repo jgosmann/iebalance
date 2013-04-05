@@ -4,7 +4,6 @@ import logging
 
 import brian as b
 from joblib import Parallel, delayed
-import numpy as np
 import tables
 
 from config import Configurable, quantity, quantity_list
@@ -92,7 +91,7 @@ if __name__ == '__main__':
 
     with tables.openFile(os.path.join(outpath, args.output[0]), 'w') as outfile:
         outfile.setNodeAttr('/', 'config', config)
-        table = outfile.createTable('/', 'rates', np.asarray(data), RatesTable)
+        table = outfile.createTable('/', 'rates', RatesTable)
         table.attrs.unit = 'hertz'
         table.append(data)
         outfile.flush()
