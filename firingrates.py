@@ -31,17 +31,17 @@ class ModelRateRecorder(Configurable):
             self.model.add(self.m_spike_count)
             time_passed = time
 
-        return [float(self.model.tau_w / b.second),
-                float(
-                    self.m_spike_count.nspikes /
-                    (time_passed - self.store_times[0]) / b.hertz)]
+        return float(
+            self.m_spike_count.nspikes /
+            (time_passed - self.store_times[0]) / b.hertz)
 
 
-def run_simulation(tau_w):
+def run_simulation(config, tau_w):
+    config['model']['tau_w'] = [tau_w / b.second, "second"]
+    #b.Clock(quantity(config['dt']), makedefaultclock=True)
     model = singlecell.SingleCellModel(config)
-    model.tau_w = tau_w
     recorder = ModelRateRecorder(config['recording'], model)
-    return recorder.record()
+    return [tau_w, recorder.record()]
 
 
 class RatesTable(tables.IsDescription):
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     tau_ws = quantity_list(config['tau_ws'])
 
     b.defaultclock.dt = quantity(config['dt'])
-    data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation)(tau_w)
+    data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation)(config, tau_w)
                                          for tau_w in tau_ws)
     print data
 
