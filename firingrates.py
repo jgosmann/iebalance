@@ -45,8 +45,8 @@ def run_simulation(config, tau_w):
 
 
 class RatesTable(tables.IsDescription):
-    tau_w = tables.Float32Col()
-    rate = tables.Float32Col()
+    tau_w = tables.Float32Col(pos=1)
+    rate = tables.Float32Col(pos=2)
 
 
 if __name__ == '__main__':
