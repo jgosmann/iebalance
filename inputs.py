@@ -151,12 +151,12 @@ class GroupedSpikeTimesGenerator(Configurable):
         self.num_inhib_per_tuning = self.num_inhibitory / self.num_tunings
         self.num_excit_per_tuning = self.num_excitatory / self.num_tunings
 
-        signal_gens = [
+        self.signal_gens = [
             InputSignalGenerator(self._config['raw_signals'], duration)
             for i in xrange(self.num_tunings)]
         time_gens = [PoissonSpikeTimesGenerator(
             gen, self.neuron_indices_of_group(i), self.refractory_period)
-            for i, gen in enumerate(signal_gens)]
+            for i, gen in enumerate(self.signal_gens)]
         self.merged_times = heapq.merge(*time_gens)
 
     def __iter__(self):

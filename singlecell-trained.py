@@ -108,6 +108,9 @@ class SingleCellModelSpikeRecorder(Configurable):
             self._store_recent_spikes(outfile, i)
             outfile.flush()
 
+        self._store_signals(outfile)
+        outfile.flush()
+
     @staticmethod
     def _store_array_with_unit(
             outfile, where, name, array, unit, *args, **kwargs):
@@ -127,6 +130,11 @@ class SingleCellModelSpikeRecorder(Configurable):
             outfile, '/spikes', 'trial%i' % trial, self.m_spikes[0], 'second'
             "Spike times of model neuron.", createparents=True)
         self.m_spikes.reinit()
+
+    def _store_signals(self, outfile):
+        group = outfile.createGroup('/', 'signals')
+        for i, signal_gen in enumerate(self.model.input_gen.signal_gens):
+            outfile.createArray(group, 's%i' % i, signal_gen.signal)
 
 
 if __name__ == '__main__':
