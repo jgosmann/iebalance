@@ -103,7 +103,7 @@ class SingleCellModelSpikeRecorder(Configurable):
 
         for i in xrange(self.num_trials):
             logger.info(
-                'Running time trial %i of %i', i, self.num_trials)
+                'Running time trial %i of %i', i + 1, self.num_trials)
             self.model.run(self.stimulus_duration, report='text')
             self._store_recent_spikes(outfile, i)
             outfile.flush()
