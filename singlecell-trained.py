@@ -124,7 +124,7 @@ class SingleCellModelSpikeRecorder(Configurable):
 
     def _store_recent_spikes(self, outfile, trial):
         self._store_array_with_unit(
-            outfile, '/spikes', 'trial%1' % trial, self.m_spikes[0], 'second'
+            outfile, '/spikes', 'trial%i' % trial, self.m_spikes[0], 'second'
             "Spike times of model neuron.", createparents=True)
         self.m_spikes.reinit()
 
