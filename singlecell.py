@@ -241,6 +241,10 @@ class SingleCellModelRecorder(Configurable):
         self._store_array_with_unit(
             outfile, group, 'times', self.m_inh_weights.times / b.second,
             'second', "Times of the recorded synaptic weights.")
+        group = outfile.createGroup(weight_group, 'excitatory')
+        self._store_array_with_unit(
+            outfile, group, 'weights', self.model.exc_synapses.w[:] / b.siemens,
+            'siemens')
 
 
 if __name__ == '__main__':
