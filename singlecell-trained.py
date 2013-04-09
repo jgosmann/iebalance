@@ -4,6 +4,7 @@ from config import Configurable, quantity
 import brian as b
 import inputs
 import logging
+from singlecell import ModelInputGroups
 
 
 logger = logging.getLogger('single-cell-trained')
@@ -69,13 +70,13 @@ class SingleCellTrainedModel(b.Network, Configurable):
         builder = TrainedModelBuilder(config['model'])
         self.input_gen = inputs.GroupedSpikeTimesGenerator(
             config['inputs'], self.stimulus_duration)
-        #self.indexing_scheme = self.input_gen.get_indexing_scheme()
+        self.indexing_scheme = self.input_gen.get_indexing_scheme()
 
         self.neuron = builder.build_neuron_group()
         self.input_neurons = b.SpikeGeneratorGroup(
             self.input_gen.num_trains, inputs.swap_tuple_values(self.input_gen))
-        #self.input_groups = ModelInputGroups(
-            #self.indexing_scheme, self.input_neurons)  # FIXME
+        self.input_groups = ModelInputGroups(
+            self.indexing_scheme, self.input_neurons)
         self.exc_synapses = builder.build_exc_synapses(
             self.input_groups.excitatory, self.neuron, exc_weights)
         self.inh_synapses = builder.build_inh_synapses(
