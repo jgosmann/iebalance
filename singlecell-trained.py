@@ -57,7 +57,7 @@ class TrainedModelBuilder(Configurable):
 
     def build_inh_synapses(self, source, target, weights):
         connection = b.Connection(source, target, 'g_inh')
-        connection[:, 1] = weights
+        connection[:, 0] = weights
         return connection
 
 
