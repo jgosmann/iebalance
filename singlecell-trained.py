@@ -52,7 +52,7 @@ class TrainedModelBuilder(Configurable):
 
     def build_exc_synapses(self, source, target, weights):
         connection = b.Connection(source, target, 'g_exc')
-        connection[:, 1] = weights
+        connection[:, 0] = weights
         return connection
 
     def build_inh_synapses(self, source, target, weights):
