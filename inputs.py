@@ -11,7 +11,7 @@ import tables
 
 
 class InputSignalGenerator(Configurable):
-    def __init__(self, config):
+    def __init__(self, config, duration=None):
         Configurable.__init__(self, config)
         self._add_config_value('peak_firing_rate', quantity)
         self._add_config_value('background_activity', quantity)
@@ -22,6 +22,8 @@ class InputSignalGenerator(Configurable):
         self.current_raw_value = 0.0
         self.current_time = 0.0 * brian.second
         self.sparsification_start = 1
+        self.signal = None
+        self.duration = duration
 
     def gen_filtered_white_noise(self, initial_value, size):
         r = rnd.rand(size) - 0.5
@@ -32,13 +34,19 @@ class InputSignalGenerator(Configurable):
             signal[i] = (1 - filter_value) * r[i] + filter_value * signal[i - 1]
         return signal
 
-    def next_interval(self, duration):
-        signal = self.gen_filtered_white_noise(
-            self.current_raw_value, duration / self.dt)
-        self.current_raw_value = signal[-1]
+    def next_interval(self):
+        if self.duration is None:
+            duration = 4 * brian.second
+            self.signal = None
+        else:
+            duration = self.duration
+        if self.signal is None:
+            self.signal = self.gen_filtered_white_noise(
+                self.current_raw_value, duration / self.dt)
+            self.current_raw_value = self.signal[-1]
+            self.rectify(self.signal)
         self.current_time += duration
-        self.rectify(signal)
-        return signal
+        return self.signal
 
     def rectify(self, signal):
         self.remove_bumps(signal)
@@ -129,7 +137,7 @@ class PoissonSpikeTimesGenerator(object):
 
 
 class GroupedSpikeTimesGenerator(Configurable):
-    def __init__(self, config):
+    def __init__(self, config, duration=None):
         Configurable.__init__(self, config)
 
         self._add_config_value('num_tunings', int)
@@ -143,8 +151,9 @@ class GroupedSpikeTimesGenerator(Configurable):
         self.num_inhib_per_tuning = self.num_inhibitory / self.num_tunings
         self.num_excit_per_tuning = self.num_excitatory / self.num_tunings
 
-        signal_gens = [InputSignalGenerator(self._config['raw_signals'])
-                       for i in xrange(self.num_tunings)]
+        signal_gens = [
+            InputSignalGenerator(self._config['raw_signals'], duration)
+            for i in xrange(self.num_tunings)]
         time_gens = [PoissonSpikeTimesGenerator(
             gen, self.neuron_indices_of_group(i), self.refractory_period)
             for i, gen in enumerate(signal_gens)]
