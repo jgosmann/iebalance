@@ -39,7 +39,7 @@ class TrainedModelBuilder(Configurable):
             dg_exc/dt = -g_exc / self.tau_exc : siemens
             I_exc = g_exc * (self.V_exc - V) : amp
             dg_inh/dt = -g_inh / self.tau_inh : siemens
-            I_inh = g_inh * (self.V_exc - V) : amp
+            I_inh = g_inh * (self.V_inh - V) : amp
             dV/dt = ((self.V_rest - V) + (I_exc + I_inh + self.I_b) / \
                 self.g_leak) / self.tau : volt
             dx/dt = -x / self.tau_stdp : 1
