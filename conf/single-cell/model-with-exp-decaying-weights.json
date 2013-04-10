@@ -21,7 +21,7 @@
         "init_inh_w": [35, "psiemens"],
 
         "tau_stdp": [20, "msecond"],
-        "tau_w": [12, "second"],
+        "tau_w": [120, "msecond"],
         "eta": 1e-3,
         "rho": [5, "hertz"],
 
