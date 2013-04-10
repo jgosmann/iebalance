@@ -126,9 +126,18 @@ class SingleCellModelSpikeRecorder(Configurable):
             group, 'excitatory', self.model.input_groups.exc_group_membership)
 
     def _store_recent_spikes(self, outfile, trial):
-        self._store_array_with_unit(
-            outfile, '/spikes', 'trial%i' % trial, self.m_spikes[0], 'second'
-            "Spike times of model neuron.", createparents=True)
+        where = '/spikes'
+        name = 'trial%i' % trial
+        title = "Spike times of model neuron."
+        if self.m_spikes[0].size > 0:
+            self._store_array_with_unit(
+                outfile, where, name, self.m_spikes[0], 'second', title,
+                createparents=True)
+        else:
+            node = outfile.createEArray(
+                where, name, tables.Float32Col(), self.m_spikes[0].shape, title,
+                createparents=True)
+            node.attrs.unit = 'second'
         self.m_spikes.reinit()
 
     def _store_signals(self, outfile):
