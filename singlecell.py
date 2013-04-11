@@ -47,7 +47,8 @@ class ModelBuilder(Configurable):
             ''')
         self.eqs_inh_synapse = SynapsesEquations(
             config['synapses']['inhibitory'])
-        self.eqs_exc_synapse = 'w : 1'
+        self.eqs_exc_synapse = SynapsesEquations(
+            config['synapses']['excitatory'])
 
     def build_neuron_group(self, num_neurons=1):
         return b.NeuronGroup(
@@ -56,7 +57,8 @@ class ModelBuilder(Configurable):
 
     def build_exc_synapses(self, source, target, tuning):
         synapses = b.Synapses(
-            source, target, model=self.eqs_exc_synapse, pre='g_exc_post += w')
+            source, target, model=self.eqs_exc_synapse.equations,
+            pre=self.eqs_exc_synapse.pre, post=self.eqs_inh_synapse.post)
         synapses[:, :] = True
         synapses.w[:, :] = np.atleast_2d(self.g_exc_bar * tuning).T
         return synapses

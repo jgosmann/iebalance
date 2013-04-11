@@ -26,6 +26,11 @@
         "rho": [5, "hertz"],
 
         "synapses": {
+            "excitatory": {
+                "equations": ["w : 1"],
+                "pre": ["g_exc_post += w"],
+                "post": [""]
+            },
             "inhibitory": {
                 "equations": [
                     "dxPre/dt = -xPre / tau_stdp : 1 (event-driven)",
