@@ -56,9 +56,16 @@ class ModelBuilder(Configurable):
             threshold=self.threshold, refractory=self.refractory_period)
 
     def build_exc_synapses(self, source, target, tuning):
+        eta = self.eta
+        exp = np.exp
+        g_exc_bar = self.g_exc_bar
+        tau_stdp = self.tau_stdp
+        # suppress unused warnings
+        assert eta and exp and g_exc_bar and tau_stdp
+
         synapses = b.Synapses(
             source, target, model=self.eqs_exc_synapse.equations,
-            pre=self.eqs_exc_synapse.pre, post=self.eqs_inh_synapse.post)
+            pre=self.eqs_exc_synapse.pre, post=self.eqs_exc_synapse.post)
         synapses[:, :] = True
         synapses.w[:, :] = np.atleast_2d(self.g_exc_bar * tuning).T
         return synapses
@@ -156,13 +163,16 @@ class SingleCellModelRecorder(Configurable):
         self.m_inh_syn_currents = b.RecentStateMonitor(
             model.neuron, 'I_inh', self.recording_duration,
             timestep=self.current_timestep)
+        self.m_exc_weights = b.StateMonitor(
+            model.exc_synapses, 'w', record=True,
+            timestep=self.weights_timestep)
         self.m_inh_weights = b.StateMonitor(
             model.inh_synapses, 'w', record=True,
             timestep=self.weights_timestep)
 
         self.model.add(
             self.m_spikes, self.m_rates, self.m_exc_syn_currents,
-            self.m_inh_syn_currents, self.m_inh_weights)
+            self.m_inh_syn_currents, self.m_exc_weights, self.m_inh_weights)
 
     def record(self, outfile):
         self._store_group_memberships(outfile)
@@ -238,8 +248,11 @@ class SingleCellModelRecorder(Configurable):
             'second', "Times of the recorded synaptic weights.")
         group = outfile.createGroup(weight_group, 'excitatory')
         self._store_array_with_unit(
-            outfile, group, 'weights', self.model.exc_synapses.w[:] / b.siemens,
+            outfile, group, 'weights', self.m_exc_weights.values / b.siemens,
             'siemens')
+        self._store_array_with_unit(
+            outfile, group, 'times', self.m_exc_weights.times / b.second,
+            'second', "Times of the recorded synaptic weights.")
 
 
 if __name__ == '__main__':
