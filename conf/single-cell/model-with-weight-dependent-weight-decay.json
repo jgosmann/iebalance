@@ -39,7 +39,7 @@
                 "pre": [
                     "xPre += 1",
                     "g_inh_post += w",
-                    "w += g_inh_bar * eta * x_post - 0.2 * eta * w"
+                    "w += g_inh_bar * eta * x_post - 0.3 * eta * w"
                 ],
                 "post": [
                     "x_post += 1",
