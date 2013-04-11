@@ -28,14 +28,12 @@
         "synapses": {
             "inhibitory": {
                 "equations": [
-                    "dxPre/dt = -xPre / tau_stdp : 1",
-                    "dg/dt = -g / tau_inh : siemens",
-                    "I = g * (E - V_post) : amp",
+                    "dxPre/dt = -xPre / tau_stdp : 1 (event-driven)",
                     "w : 1"
                 ],
                 "pre": [
                     "xPre += 1",
-                    "g += w",
+                    "g_inh_post += w",
                     "w += g_inh_bar * eta * (x_post - alpha)"
                 ],
                 "post": [
