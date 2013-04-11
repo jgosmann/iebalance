@@ -37,19 +37,17 @@ class ModelBuilder(Configurable):
         self.alpha = 2 * self.rho * self.tau_stdp
 
         self.eqs = b.Equations('''
-            I_exc : amp
-            I_inh : amp
+            dg_exc/dt = -g_exc / self.tau_exc : siemens
+            dg_inh/dt = -g_inh / self.tau_inh : siemens
+            I_inh = g_inh * (self.V_inh - V) : amp
+            I_exc = g_exc * (self.V_exc - V) : amp
             dV/dt = ((self.V_rest - V) + (I_exc + I_inh + self.I_b) / \
                 self.g_leak) / self.tau : volt
             dx/dt = -x / self.tau_stdp : 1
             ''')
         self.eqs_inh_synapse = SynapsesEquations(
             config['synapses']['inhibitory'])
-        self.eqs_exc_synapse = '''
-            dg/dt = -g / self.tau_exc : siemens
-            I = g * (self.V_exc - V_post) : amp
-            w : 1
-            '''
+        self.eqs_exc_synapse = 'w : 1'
 
     def build_neuron_group(self, num_neurons=1):
         return b.NeuronGroup(
@@ -58,31 +56,26 @@ class ModelBuilder(Configurable):
 
     def build_exc_synapses(self, source, target, tuning):
         synapses = b.Synapses(
-            source, target, model=self.eqs_exc_synapse, pre='g += w')
+            source, target, model=self.eqs_exc_synapse, pre='g_exc_post += w')
         synapses[:, :] = True
         synapses.w[:, :] = np.atleast_2d(self.g_exc_bar * tuning).T
-        target.I_exc = synapses.I
         return synapses
 
     def build_inh_synapses(self, source, target):
         alpha = self.alpha
         eta = self.eta
         g_inh_bar = self.g_inh_bar
-        tau_inh = self.tau_inh
         tau_stdp = self.tau_stdp
         tau_w = self.tau_w
-        E = self.V_inh
         exp = np.exp
         # suppress unused warnings
-        assert alpha and eta and g_inh_bar and tau_inh and tau_stdp and tau_w
-        assert E and exp
+        assert alpha and eta and g_inh_bar and tau_stdp and tau_w and exp
 
         synapses = b.Synapses(
             source, target, model=self.eqs_inh_synapse.equations,
             pre=self.eqs_inh_synapse.pre, post=self.eqs_inh_synapse.post)
         synapses[:, :] = True
         synapses.w = self.init_inh_w
-        target.I_inh = synapses.I
         return synapses
 
 
@@ -156,10 +149,10 @@ class SingleCellModelRecorder(Configurable):
         self.m_spikes = b.SpikeMonitor(model.neuron)
         self.m_rates = b.PopulationRateMonitor(model.neuron, self.rate_bin_size)
         self.m_exc_syn_currents = b.RecentStateMonitor(
-            model.exc_synapses, 'I', self.recording_duration,
+            model.neuron, 'I_exc', self.recording_duration,
             timestep=self.current_timestep)
         self.m_inh_syn_currents = b.RecentStateMonitor(
-            model.inh_synapses, 'I', self.recording_duration,
+            model.neuron, 'I_inh', self.recording_duration,
             timestep=self.current_timestep)
         self.m_inh_weights = b.StateMonitor(
             model.inh_synapses, 'w', record=True,
