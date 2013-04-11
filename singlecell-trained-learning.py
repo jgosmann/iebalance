@@ -86,7 +86,8 @@ class SingleCellTrainedLearningModel(b.Network, Configurable):
         self._add_config_value('stimulus_duration', quantity)
 
         builder = TrainedLearningModelBuilder(config['model'])
-        self.input_gen = inputs.GroupedSpikeTimesGenerator(config['inputs'])
+        self.input_gen = inputs.GroupedSpikeTimesGenerator(
+            config['inputs'], self.stimulus_duration)
         self.indexing_scheme = self.input_gen.get_indexing_scheme()
 
         self.neuron = builder.build_neuron_group()
