@@ -1,4 +1,8 @@
 {
+    "dt": [0.1, "msecond"],
+    "stimulus_duration": [5, "second"],
+    "num_trials": 50,
+
     "model": {
         "tau": [20, "msecond"],
         "V_rest": [-60, "mvolt"],
@@ -17,21 +21,20 @@
         "init_inh_w": [35, "psiemens"],
 
         "tau_stdp": [20, "msecond"],
+        "tau_w": [120, "second"],
         "eta": 1e-3,
         "rho": [5, "hertz"],
 
         "synapses": {
             "inhibitory": {
                 "equations": [
-                    "dxPre/dt = -xPre / tau_stdp : 1",
-                    "dg/dt = -g / tau_inh : siemens",
-                    "I = g * (E - V_post) : amp",
+                    "dxPre/dt = -xPre / tau_stdp : 1 (event-driven)",
                     "w : 1"
                 ],
                 "pre": [
                     "xPre += 1",
-                    "g += w",
-                    "w += g_inh_bar * eta * (x_post - w / 500 / msecond)"
+                    "g_inh_post += w",
+                    "w += g_inh_bar * eta * x_post - 0.2 * eta * w"
                 ],
                 "post": [
                     "x_post += 1",
@@ -43,7 +46,7 @@
 
     "recording": {
         "recording_duration": [4, "second"],
-        "store_times": [[4, 100, 250], "second"],
+        "store_times": [[4, 100, 400], "second"],
         "rate_bin_size": [2, "second"],
         "current_timestep": 10,
         "weights_timestep": 10000
