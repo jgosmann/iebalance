@@ -60,14 +60,14 @@ class InputSignalGenerator(Configurable):
         bump_borders = np.diff(np.asarray(signal > 0, dtype=int))
         bump_starts = np.nonzero(bump_borders == 1)[0]
         bump_ends = np.nonzero(bump_borders == -1)[0]
-        if bump_starts.size > 0 and bump_ends.size > 0:
-            while bump_starts[0] > bump_ends[0]:
-                if start <= 0:
-                    signal[0:bump_ends[0] + 1] = 0
-                    start += self.sparseness - 1
-                else:
-                    start = start - 1
-                bump_ends = bump_ends[1:]
+        while bump_starts.size > 0 and bump_ends.size > 0 \
+                and bump_starts[0] > bump_ends[0]:
+            if start <= 0:
+                signal[0:bump_ends[0] + 1] = 0
+                start += self.sparseness - 1
+            else:
+                start = start - 1
+            bump_ends = bump_ends[1:]
         self.sparsification_start = self.sparseness - 1 - \
             (bump_starts.size - start) % self.sparseness
         for i in xrange(start, bump_starts.size, self.sparseness):
