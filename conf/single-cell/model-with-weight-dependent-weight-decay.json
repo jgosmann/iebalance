@@ -25,7 +25,7 @@
         "tau_w": [120, "second"],
         "eta": 1e-3,
         "rho": [5, "hertz"],
-        "beta": 0.3
+        "beta": 0.3,
 
         "synapses": {
             "excitatory": {
