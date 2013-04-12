@@ -102,7 +102,7 @@ if __name__ == '__main__':
         data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation)(
             config, tau_w) for tau_w in tau_ws)
     else:
-        betas = quantity_list(config['betas'])
+        betas = config['betas']
         data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation_beta)(
             config, beta) for beta in betas)
     print data
