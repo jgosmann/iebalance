@@ -1,0 +1,16 @@
+{
+    "epoch_duration": [300, "msecond"],
+    "num_tunings": 8,
+    "num_epochs": 6000,
+    "eta": 1e-2,
+    "rho": [5, "hertz"],
+
+    "raw_signals": {
+        "peak_firing_rate": [500, "hertz"],
+        "background_activity": [5, "hertz"],
+        "sparseness": 2,
+        "approximate_normalization": 0.03,
+        "filter_time_constant": [50, "msecond"],
+        "dt": [1, "msecond"]
+    }
+}
