@@ -33,6 +33,7 @@ class ModelBuilder(Configurable):
         self._add_config_value('tau_w', quantity)
         self._add_config_value('eta', float)
         self._add_config_value('rho', quantity)
+        self._add_config_value('beta', float)
 
         self.alpha = 2 * self.rho * self.tau_stdp
 
@@ -72,13 +73,15 @@ class ModelBuilder(Configurable):
 
     def build_inh_synapses(self, source, target):
         alpha = self.alpha
+        beta = self.beta
         eta = self.eta
         g_inh_bar = self.g_inh_bar
         tau_stdp = self.tau_stdp
         tau_w = self.tau_w
         exp = np.exp
         # suppress unused warnings
-        assert alpha and eta and g_inh_bar and tau_stdp and tau_w and exp
+        assert alpha and beta and eta and g_inh_bar and tau_stdp and tau_w
+        assert exp
 
         synapses = b.Synapses(
             source, target, model=self.eqs_inh_synapse.equations,

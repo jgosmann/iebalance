@@ -38,10 +38,16 @@ class ModelRateRecorder(Configurable):
 
 def run_simulation(config, tau_w):
     config['model']['tau_w'] = [tau_w / b.second, "second"]
-    #b.Clock(quantity(config['dt']), makedefaultclock=True)
     model = singlecell.SingleCellModel(config)
     recorder = ModelRateRecorder(config['recording'], model)
     return [tau_w, recorder.record()]
+
+
+def run_simulation_beta(config, beta):
+    config['model']['beta'] = beta
+    model = singlecell.SingleCellModel(config)
+    recorder = ModelRateRecorder(config['recording'], model)
+    return [beta, recorder.record()]
 
 
 class RatesTable(tables.IsDescription):
@@ -67,6 +73,10 @@ if __name__ == '__main__':
         '-c', '--config', type=str, nargs=1, required=True,
         help="Path to the configuration file.")
     parser.add_argument(
+        '-v', '--var', type=str, nargs=1, choices=['tau_w', 'beta'],
+        default=['tau_w'],
+        help="Independent variable to modulate firing rates.")
+    parser.add_argument(
         '-j', '--jobs', type=int, nargs=1, default=[1],
         help="Number of parallel jobs.")
     parser.add_argument(
@@ -85,11 +95,16 @@ if __name__ == '__main__':
     with open(args.config[0], 'r') as f:
         config = json.load(f)
 
-    tau_ws = quantity_list(config['tau_ws'])
-
     b.defaultclock.dt = quantity(config['dt'])
-    data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation)(config, tau_w)
-                                         for tau_w in tau_ws)
+
+    if args.var[0] == 'tau_w':
+        tau_ws = quantity_list(config['tau_ws'])
+        data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation)(
+            config, tau_w) for tau_w in tau_ws)
+    else:
+        betas = quantity_list(config['betas'])
+        data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation_beta)(
+            config, beta) for beta in betas)
     print data
 
     with tables.openFile(os.path.join(outpath, args.output[0]), 'w') as outfile:
