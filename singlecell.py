@@ -92,6 +92,8 @@ class ModelBuilder(Configurable):
         return synapses
 
 
+class SynapsesEquations(Configurable):
+    def __init__(self, config):
         Configurable.__init__(self, config)
         self._add_config_value('equations', EquationString('\n'))
         self._add_config_value('pre', EquationString('; '))
