@@ -57,12 +57,13 @@ class ModelBuilder(Configurable):
             threshold=self.threshold, refractory=self.refractory_period)
 
     def build_exc_synapses(self, source, target, tuning):
+        alpha = self.alpha
         eta = self.eta
         exp = np.exp
         g_exc_bar = self.g_exc_bar
         tau_stdp = self.tau_stdp
         # suppress unused warnings
-        assert eta and exp and g_exc_bar and tau_stdp
+        assert alpha and eta and exp and g_exc_bar and tau_stdp
 
         synapses = b.Synapses(
             source, target, model=self.eqs_exc_synapse.equations,
