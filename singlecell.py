@@ -80,6 +80,7 @@ class ModelBuilder(Configurable):
         tau_w = self.tau_w
         exp = np.exp
         # suppress unused warnings
+        # FIXME this warning suppression hack fails for variables equal to 0
         assert alpha and beta and eta and g_inh_bar and tau_stdp and tau_w
         assert exp
 
@@ -91,8 +92,6 @@ class ModelBuilder(Configurable):
         return synapses
 
 
-class SynapsesEquations(Configurable):
-    def __init__(self, config):
         Configurable.__init__(self, config)
         self._add_config_value('equations', EquationString('\n'))
         self._add_config_value('pre', EquationString('; '))
