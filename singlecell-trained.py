@@ -185,7 +185,7 @@ if __name__ == '__main__':
 
     with tables.openFile(args.input[0], 'r') as data:
         model = SingleCellTrainedModel(
-            config, data.root.weights.excitatory.weights,
+            config, data.root.weights.excitatory.weights[:, -1],
             data.root.weights.inhibitory.weights[:, -1])
     recorder = SingleCellModelSpikeRecorder(config, model)
 
