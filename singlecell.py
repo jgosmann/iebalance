@@ -5,6 +5,7 @@ import brian as b
 import inputs
 import logging
 import numpy as np
+from numpy import linalg
 import numpy.random as rnd
 
 
@@ -141,14 +142,44 @@ class SingleCellModel(b.Network):
             self.input_groups.inhibitory, self.neuron)
 
         @b.network_operation
-        def normalize_exc_synapses():
+        def normalize_exc_synapses_mult_l1():
             self.exc_synapses.w[:, :] = \
                 self.total_exc_weight * self.exc_synapses.w[:, :] / np.sum(
                     self.exc_synapses.w[:, :])
 
+        @b.network_operation
+        def normalize_exc_synapses_mult_l2():
+            self.exc_synapses.w[:, :] = \
+                self.total_exc_weight * self.exc_synapses.w[:, :] / linalg.norm(
+                    self.exc_synapses.w[:, :].flat)
+
+        @b.network_operation
+        def normalize_exc_synapses_add_l1():
+            self.exc_synapses.w[:, :] -= \
+                (np.sum(self.exc_synapses.w[:, :]) - self.total_exc_weight) / \
+                self.exc_synapses.w[:, :].shape[0]
+
+        @b.network_operation
+        def normalize_exc_synapses_add_l2():
+            self.exc_synapses.w[:, :] -= \
+                (linalg.norm(self.exc_synapses.w[:, :]) -
+                 self.total_exc_weight) / self.exc_synapses.w[:, :].shape[0]
+
+        @b.network_operation
+        def noop():
+            pass
+
+        normalizations = {
+            'mult_l1': normalize_exc_synapses_mult_l1,
+            'add_l1': normalize_exc_synapses_add_l1,
+            'mult_l2': normalize_exc_synapses_mult_l2,
+            'add_l2': normalize_exc_synapses_add_l2,
+            'none': noop
+        }
+
         self.add(
             self.neuron, self.input_neurons, self.inh_synapses,
-            self.exc_synapses, normalize_exc_synapses)
+            self.exc_synapses, normalizations[config['model']['normalization']])
 
     @staticmethod
     def tuning_function(subgroup_indices, peak):

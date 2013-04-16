@@ -26,6 +26,8 @@
         "eta": 1e-2,
         "rho": [5, "hertz"],
 
+        "normalization": "add_l1",
+
         "synapses": {
             "excitatory": {
                 "equations": [
