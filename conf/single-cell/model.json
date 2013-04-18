@@ -22,6 +22,7 @@
 
         "tau_stdp": [20, "msecond"],
         "tau_w": [120, "second"],
+        "beta": 0.3,
         "eta": 1e-2,
         "tau_eta": [30, "second"],
         "rho": [5, "hertz"],
