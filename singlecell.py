@@ -55,9 +55,11 @@ class ModelBuilder(Configurable):
             config['synapses']['excitatory'])
 
     def build_neuron_group(self, num_neurons=1):
-        return b.NeuronGroup(
+        n = b.NeuronGroup(
             num_neurons, model=self.eqs, reset=self.V_rest,
             threshold=self.threshold, refractory=self.refractory_period)
+        n.eta = self.eta
+        return n
 
     def build_exc_synapses(self, source, target, tuning):
         alpha = self.alpha
