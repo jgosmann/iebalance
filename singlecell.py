@@ -33,6 +33,7 @@ class ModelBuilder(Configurable):
         self._add_config_value('tau_stdp', quantity)
         self._add_config_value('tau_w', quantity)
         self._add_config_value('eta', float)
+        self._add_config_value('tau_eta', quantity)
         self._add_config_value('rho', quantity)
         self._add_config_value('beta', float)
 
@@ -46,6 +47,7 @@ class ModelBuilder(Configurable):
             dV/dt = ((self.V_rest - V) + (I_exc + I_inh + self.I_b) / \
                 self.g_leak) / self.tau : volt
             dx/dt = -x / self.tau_stdp : 1
+            deta/dt = -eta / self.tau_eta : 1
             ''')
         self.eqs_inh_synapse = SynapsesEquations(
             config['synapses']['inhibitory'])

@@ -22,7 +22,8 @@
 
         "tau_stdp": [20, "msecond"],
         "tau_w": [120, "second"],
-        "eta": 1e-3,
+        "eta": 1e-2,
+        "tau_eta": [30, "second"],
         "rho": [5, "hertz"],
 
         "synapses": {
@@ -39,11 +40,11 @@
                 "pre": [
                     "xPre += 1",
                     "g_inh_post += w",
-                    "w += g_inh_bar * eta * (x_post - alpha)"
+                    "w += g_inh_bar * eta_post * (x_post - alpha)"
                 ],
                 "post": [
                     "x_post += 1",
-                    "w += g_inh_bar * eta * xPre"
+                    "w += g_inh_bar * eta_post * xPre"
                 ]
             }
         }
