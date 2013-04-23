@@ -147,26 +147,27 @@ class SingleCellModel(b.Network):
         self.exc_synapses = builder.build_exc_synapses(
             self.input_groups.excitatory, self.neuron,
             self.tuning_function(self.input_groups.exc_group_membership, 5))
-        self.total_exc_weight = np.sum(self.exc_synapses.w[:, :])
+        self.total_exc_weight_l1 = np.sum(self.exc_synapses.w[:, :])
+        self.total_exc_weight_l2 = linalg.norm(self.exc_synapses.w[:, :])
         self.inh_synapses = builder.build_inh_synapses(
             self.input_groups.inhibitory, self.neuron)
 
         @b.network_operation
         def normalize_exc_synapses_mult_l1():
             self.exc_synapses.w[:, :] = \
-                self.total_exc_weight * self.exc_synapses.w[:, :] / np.sum(
+                self.total_exc_weight_l1 * self.exc_synapses.w[:, :] / np.sum(
                     self.exc_synapses.w[:, :])
 
         @b.network_operation
         def normalize_exc_synapses_mult_l2():
             self.exc_synapses.w[:, :] = \
-                self.total_exc_weight * self.exc_synapses.w[:, :] / linalg.norm(
+                self.total_exc_weight_l2 * self.exc_synapses.w[:, :] / linalg.norm(
                     self.exc_synapses.w[:, :].flat)
 
         @b.network_operation
         def normalize_exc_synapses_add_l1():
             self.exc_synapses.w[:, :] -= \
-                (np.sum(self.exc_synapses.w[:, :]) - self.total_exc_weight) / \
+                (np.sum(self.exc_synapses.w[:, :]) - self.total_exc_weight_l1) / \
                 self.exc_synapses.w[:, :].shape[0]
             self.exc_synapses.w[:, :] = np.maximum(0, self.exc_synapses.w[:, :])
 
@@ -174,7 +175,7 @@ class SingleCellModel(b.Network):
         def normalize_exc_synapses_add_l2():
             self.exc_synapses.w[:, :] -= \
                 (linalg.norm(self.exc_synapses.w[:, :]) -
-                 self.total_exc_weight) / self.exc_synapses.w[:, :].shape[0]
+                 self.total_exc_weight_l2) / self.exc_synapses.w[:, :].shape[0]
             self.exc_synapses.w[:, :] = np.maximum(0, self.exc_synapses.w[:, :])
 
         @b.network_operation
