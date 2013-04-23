@@ -1,5 +1,5 @@
 {
-    "dt": [1, "msecond"],
+    "dt": [0.1, "msecond"],
     "stimulus_duration": [5, "second"],
     "num_trials": 50,
 
@@ -23,7 +23,8 @@
         "beta": 0.3,
         "tau_stdp": [20, "msecond"],
         "tau_w": [120, "second"],
-        "eta": 1e-2,
+        "eta": 1e-3,
+        "eta_exc": 0.5e-3,
         "rho": [5, "hertz"],
 
         "normalization": "add_l1",
@@ -37,11 +38,11 @@
                 "pre": [
                     "xPre += 1",
                     "g_exc_post += w",
-                    "w += g_exc_bar * eta * x_post"
+                    "w += g_exc_bar * eta_exc * x_post"
                 ],
                 "post": [
                     "x_post += 1",
-                    "w += g_exc_bar * eta * xPre"
+                    "w += g_exc_bar * eta_exc * xPre"
                 ]
             },
             "inhibitory": {
@@ -64,10 +65,10 @@
 
     "recording": {
         "recording_duration": [4, "second"],
-        "store_times": [[4, 8, 16], "second"],
+        "store_times": [[4, 100, 1200], "second"],
         "rate_bin_size": [2, "second"],
-        "current_timestep": 1,
-        "weights_timestep": 1000
+        "current_timestep": 10,
+        "weights_timestep": 10000
     },
 
     "inputs": {

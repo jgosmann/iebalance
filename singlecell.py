@@ -33,6 +33,7 @@ class ModelBuilder(Configurable):
         self._add_config_value('tau_stdp', quantity)
         self._add_config_value('tau_w', quantity)
         self._add_config_value('eta', float)
+        self._add_config_value('eta_exc', float)
         self._add_config_value('tau_eta', quantity)
         self._add_config_value('rho', quantity)
         self._add_config_value('beta', float)
@@ -64,11 +65,12 @@ class ModelBuilder(Configurable):
     def build_exc_synapses(self, source, target, tuning):
         alpha = self.alpha
         eta = self.eta
+        eta_exc = self.eta_exc
         exp = np.exp
         g_exc_bar = self.g_exc_bar
         tau_stdp = self.tau_stdp
         # suppress unused warnings
-        assert alpha and eta and exp and g_exc_bar and tau_stdp
+        assert alpha and eta and eta_exc and exp and g_exc_bar and tau_stdp
 
         synapses = b.Synapses(
             source, target, model=self.eqs_exc_synapse.equations,
