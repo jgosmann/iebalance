@@ -40,6 +40,10 @@ class ModelBuilder(Configurable):
 
         self.alpha = 2 * self.rho * self.tau_stdp
 
+        if self.tau_eta != 0:
+            eta_decay = 'deta/dt = -eta / self.tau_eta : 1'
+        else:
+            eta_decay = ''
         self.eqs = b.Equations('''
             dg_exc/dt = -g_exc / self.tau_exc : siemens
             dg_inh/dt = -g_inh / self.tau_inh : siemens
@@ -48,8 +52,7 @@ class ModelBuilder(Configurable):
             dV/dt = ((self.V_rest - V) + (I_exc + I_inh + self.I_b) / \
                 self.g_leak) / self.tau : volt
             dx/dt = -x / self.tau_stdp : 1
-            deta/dt = -eta / self.tau_eta : 1
-            ''')
+            ''' + eta_decay)
         self.eqs_inh_synapse = SynapsesEquations(
             config['synapses']['inhibitory'])
         self.eqs_exc_synapse = SynapsesEquations(
