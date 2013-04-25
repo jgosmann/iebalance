@@ -170,6 +170,7 @@ class SingleCellModel(b.Network):
                 (np.sum(self.exc_synapses.w[:, :]) - self.total_exc_weight_l1) / \
                 self.exc_synapses.w[:, :].shape[0]
             self.exc_synapses.w[:, :] = np.maximum(0, self.exc_synapses.w[:, :])
+            self.inh_synapses.w[:, :] = np.maximum(0, self.inh_synapses.w[:, :])
 
         @b.network_operation
         def normalize_exc_synapses_add_l2():
@@ -177,6 +178,7 @@ class SingleCellModel(b.Network):
                 (linalg.norm(self.exc_synapses.w[:, :]) -
                  self.total_exc_weight_l2) / self.exc_synapses.w[:, :].shape[0]
             self.exc_synapses.w[:, :] = np.maximum(0, self.exc_synapses.w[:, :])
+            self.inh_synapses.w[:, :] = np.maximum(0, self.inh_synapses.w[:, :])
 
         @b.network_operation
         def noop():
