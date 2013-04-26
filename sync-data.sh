@@ -15,3 +15,5 @@ for file in "(${(ps:\n:)${files}})"; do
         tar -xvz -f "$file" --keep-newer-files --strip-components 1 -C "$data"
     fi
 done
+
+umount "$remote"
