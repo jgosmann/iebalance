@@ -50,6 +50,13 @@ def run_simulation_beta(config, beta):
     return [beta, recorder.record()]
 
 
+def run_simulation_rho(config, rho):
+    config['model']['rho'] = rho
+    model = singlecell.SingleCellModel(config)
+    recorder = ModelRateRecorder(config['recording'], model)
+    return [rho, recorder.record()]
+
+
 class RatesTable(tables.IsDescription):
     tau_w = tables.Float32Col(pos=1)
     rate = tables.Float32Col(pos=2)
@@ -73,7 +80,7 @@ if __name__ == '__main__':
         '-c', '--config', type=str, nargs=1, required=True,
         help="Path to the configuration file.")
     parser.add_argument(
-        '-v', '--var', type=str, nargs=1, choices=['tau_w', 'beta'],
+        '-v', '--var', type=str, nargs=1, choices=['tau_w', 'beta', 'rho'],
         default=['tau_w'],
         help="Independent variable to modulate firing rates.")
     parser.add_argument(
@@ -101,10 +108,14 @@ if __name__ == '__main__':
         tau_ws = quantity_list(config['tau_ws'])
         data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation)(
             config, tau_w) for tau_w in tau_ws)
-    else:
+    elif args.var[0] == 'beta':
         betas = config['betas']
         data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation_beta)(
             config, beta) for beta in betas)
+    else:
+        rhos = quantity_list(config['rhos'])
+        data = Parallel(n_jobs=args.jobs[0])(delayed(run_simulation_rho)(
+            config, rho) for rho in rhos)
     print data
 
     with tables.openFile(os.path.join(outpath, args.output[0]), 'w') as outfile:
