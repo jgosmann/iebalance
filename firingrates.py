@@ -51,7 +51,7 @@ def run_simulation_beta(config, beta):
 
 
 def run_simulation_rho(config, rho):
-    config['model']['rho'] = rho
+    config['model']['rho'] = [rho / b.hertz, "hertz"]
     model = singlecell.SingleCellModel(config)
     recorder = ModelRateRecorder(config['recording'], model)
     return [rho, recorder.record()]
