@@ -12,15 +12,15 @@ logger = logging.getLogger('single-cell-continue')
 
 class SingleCellModelContinuedRecorder(Configurable):
     def __init__(self, input_data, model):
-        Configurable.__init__(
-            self, input_data.getNodeAttr('/', 'config')['recording'])
+        config = input_data.getNodeAttr('/', 'config')
+        Configurable.__init__(self, config['recording'])
         self._add_config_value('recording_duration', quantity)
         self._add_config_value('rate_bin_size', quantity)
         self._add_config_value('store_times', quantity_list)
         self._add_config_value('current_timestep', int)
         self._add_config_value('weights_timestep', int)
         self.input_data = input_data
-        self.time_passed = input_data.root.weights.inhibitory.times[-1]
+        self.dt = quantity(config['dt'])
         self.model = model
 
         self.m_spikes = b.SpikeMonitor(model.neuron)
@@ -46,8 +46,9 @@ class SingleCellModelContinuedRecorder(Configurable):
         self._store_group_memberships(outfile)
         outfile.flush()
 
+        time_passed = input_data.root.weights.inhibitory.times[-1]
         logger.info('Running time interval of duration %ds up to %ds' % (
-            time, time / b.second + self.time_passed))
+            time, time / b.second + time_passed))
         self.model.run(time, report='text')
         logger.info('Storing data')
         self._store_rates(outfile)
@@ -72,7 +73,8 @@ class SingleCellModelContinuedRecorder(Configurable):
         self._store_array_with_unit(
             outfile, group, 'times',
             np.hstack((self.input_data.root.rates.times,
-                       self.time_passed + self.m_rates.times / b.second)),
+                       self.input_data.root.rates.times[-1] +
+                       (self.rate_bin_size + self.m_rates.times) / b.second)),
             'second', "Times of the firing rate estimation bins.")
 
     def _store_group_memberships(self, outfile):
@@ -91,7 +93,9 @@ class SingleCellModelContinuedRecorder(Configurable):
             '/currents', 't' + str(interval_index), createparents=True)
         self._store_array_with_unit(
             outfile, group, 'times',
-            self.time_passed + self.m_exc_syn_currents.times / b.second,
+            self.input_data.root.currents.times[-1] +
+            (self.dt * self.current_timestep + self.m_exc_syn_currents.times) /
+            b.second,
             'second')
         self._store_array_with_unit(
             outfile, group, 'excitatory',
@@ -104,25 +108,14 @@ class SingleCellModelContinuedRecorder(Configurable):
         self._store_array_with_unit(
             outfile, '/', 'spikes',
             np.hstack((self.input_data.root.spikes,
-                       self.time_passed + self.m_spikes[0])),
+                       self.input_data.root.weights.inhibitory.times[-1] +
+                       self.dt * self.weights_timestep / b.second +
+                       self.m_spikes[0])),
             'second', "Spike times of model neuron.")
 
     def _store_weights(self, outfile):
         weight_group = outfile.createGroup('/', 'weights', "Synaptic weights.")
         group = outfile.createGroup(weight_group, 'inhibitory')
-# FIXME
-#100% complete, 15m 19s elapsed, approximately 0s remaining.
-#INFO:single-cell-continue:Storing data
-#Traceback (most recent call last):
-  #File "singlecell-continue.py", line 177, in <module>
-    #recorder.record(outfile, args.time[0] * b.second)
-  #File "singlecell-continue.py", line 54, in record
-    #self._store_weights(outfile)
-  #File "singlecell-continue.py", line 113, in _store_weights
-    #self.m_inh_weights.values / b.siemens)),
-  #File "/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages/numpy/core/shape_base.py", line 226, in vstack
-    #return _nx.concatenate(map(atleast_2d,tup),0)
-#ValueError: all the input array dimensions except for the concatenation axis must match exactly
         self._store_array_with_unit(
             outfile, group, 'weights',
             np.hstack((self.input_data.root.weights.inhibitory.weights,
@@ -131,7 +124,9 @@ class SingleCellModelContinuedRecorder(Configurable):
         self._store_array_with_unit(
             outfile, group, 'times',
             np.hstack((self.input_data.root.weights.inhibitory.times,
-                       self.time_passed + self.m_inh_weights.times / b.second)),
+                       self.input_data.root.weights.inhibitory.times[-1] +
+                       (self.dt * self.weights_timestep +
+                        self.m_inh_weights.times) / b.second)),
             'second', "Times of the recorded synaptic weights.")
         group = outfile.createGroup(weight_group, 'excitatory')
         self._store_array_with_unit(
@@ -142,7 +137,9 @@ class SingleCellModelContinuedRecorder(Configurable):
         self._store_array_with_unit(
             outfile, group, 'times',
             np.hstack((self.input_data.root.weights.excitatory.times,
-                       self.time_passed + self.m_exc_weights.times / b.second)),
+                       self.input_data.root.weights.excitatory.times[-1] +
+                       (self.dt * self.weights_timestep +
+                        self.m_exc_weights.times) / b.second)),
             'second', "Times of the recorded synaptic weights.")
 
 
@@ -186,12 +183,6 @@ if __name__ == '__main__':
         model.inh_synapses.w[:, :] = \
             input_data.root.weights.inhibitory.weights[:, -1]
         recorder = SingleCellModelContinuedRecorder(input_data, model)
-        # FIXME update store times? no
-        # FIXME set correct time done
-        #b.defaultclock.reinit(
-            #quantity_list(config['recording']['store_times'])[-1])
-        # FIXME: Set weights correctly done
-        # FIXME: What takes so long?
 
         with tables.openFile(os.path.join(outpath, args.output[0]), 'w') as outfile:
             outfile.setNodeAttr('/', 'config', config)
