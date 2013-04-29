@@ -61,7 +61,7 @@ class ModelBuilder(Configurable):
     def build_neuron_group(self, num_neurons=1):
         n = b.NeuronGroup(
             num_neurons, model=self.eqs,
-            reset=b.Reset("V = self.V_rest; x += 1"),
+            reset=b.StringReset("V = self.V_rest; x += 1"),
             threshold=self.threshold, refractory=self.refractory_period)
         n.eta = self.eta
         return n
