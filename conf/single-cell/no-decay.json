@@ -36,7 +36,6 @@
                     "w += g_inh_bar * eta * x_post"
                 ],
                 "post": [
-                    "x_post += 1",
                     "w += g_inh_bar * eta * xPre"
                 ]
             }

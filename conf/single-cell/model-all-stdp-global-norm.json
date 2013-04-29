@@ -41,7 +41,6 @@
                     "w += g_exc_bar * eta_exc * x_post"
                 ],
                 "post": [
-                    "x_post += 1",
                     "w += g_exc_bar * eta_exc * xPre"
                 ]
             },
@@ -56,7 +55,6 @@
                     "w += g_inh_bar * eta * (x_post - alpha)"
                 ],
                 "post": [
-                    "x_post += 1",
                     "w += g_inh_bar * eta * xPre"
                 ]
             }

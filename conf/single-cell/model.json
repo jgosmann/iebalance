@@ -33,7 +33,7 @@
             "excitatory": {
                 "equations": ["w : 1"],
                 "pre": ["g_exc_post += w"],
-                "post": ["x_post += 1"]
+                "post": [""]
             },
             "inhibitory": {
                 "equations": [
@@ -46,7 +46,6 @@
                     "w += g_inh_bar * eta_post * (x_post - alpha)"
                 ],
                 "post": [
-                    "x_post += 1",
                     "w += g_inh_bar * eta_post * xPre"
                 ]
             }
