@@ -33,7 +33,7 @@
             "excitatory": {
                 "equations": ["w : 1"],
                 "pre": ["g_exc_post += w"],
-                "post": [""]
+                "post": ["x_post += 1"]
             },
             "inhibitory": {
                 "equations": [
