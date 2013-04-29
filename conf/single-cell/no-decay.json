@@ -1,5 +1,8 @@
 {
     "dt": [0.1, "msecond"],
+    "stimulus_duration": [5, "second"],
+    "num_trials": 50,
+    "rhos": [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50], "hertz"],
 
     "model": {
         "tau": [20, "msecond"],
@@ -19,20 +22,28 @@
         "init_inh_w": [35, "psiemens"],
 
         "tau_stdp": [20, "msecond"],
+        "tau_w": [120, "second"],
+        "beta": 0.3,
+        "normalization": "none",
         "eta": 1e-3,
+        "eta_exc": 0.5e-3,
+        "tau_eta": [0, "second"],
         "rho": [5, "hertz"],
 
         "synapses": {
+            "excitatory": {
+                "equations": ["w : 1"],
+                "pre": ["g_exc_post += w"],
+                "post": [""]
+            },
             "inhibitory": {
                 "equations": [
-                    "dxPre/dt = -xPre / tau_stdp : 1",
-                    "dg/dt = -g / tau_inh : siemens",
-                    "I = g * (E - V_post) : amp",
+                    "dxPre/dt = -xPre / tau_stdp : 1 (event-driven)",
                     "w : 1"
                 ],
                 "pre": [
                     "xPre += 1",
-                    "g += w",
+                    "g_inh_post += w",
                     "w += g_inh_bar * eta * x_post"
                 ],
                 "post": [
