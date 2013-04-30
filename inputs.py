@@ -210,6 +210,9 @@ if __name__ == '__main__':
     parser.add_argument(
         'output', nargs=1, type=str,
         help="Path ot the HDF5 output file.")
+    parser.add_argument(
+        'label', nargs='?', type=str,
+        help="Label for the simulation. Not used!")
     args = parser.parse_args()
 
     with open(args.config[0], 'r') as f:
