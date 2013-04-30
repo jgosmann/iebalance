@@ -184,6 +184,37 @@ class GroupedSpikeTimesGenerator(Configurable):
         }
 
 
+class StoredSpikeTimesProvider(object):
+    def __init__(self, data):
+        self.num_tunings = data.root.input_data.indexing.excitatory._v_nchildren
+        assert self.num_tunings == \
+            data.root.input_data.indexing.inhibitory._v_nchildren
+        self.num_trains = \
+            sum(len(g) for g in data.root.input_data.indexing.excitatory) + \
+            sum(len(g) for g in data.root.input_data.indexing.inhibitory)
+        self.num_trains_per_tuning = self.num_trains // self.num_tunings
+
+        self.data = data
+        self._iter = self.data.root.input_data.spiketimes.iterrows()
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        row = self._iter.next()
+        return row['neuron_index'], row['spiketime'] * brian.second
+
+    def get_indexing_scheme(self):
+        return {
+            'excitatory': [
+                self.data.root.input_data.indexing.excitatory._f_getChild(
+                    'group%i' % i) for i in xrange(self.num_tunings)],
+            'inhibitory': [
+                self.data.root.input_data.indexing.inhibitory._f_getChild(
+                    'group%i' % i) for i in xrange(self.num_tunings)]
+        }
+
+
 def swap_tuple_values(tuples):
     for x, y in tuples:
         yield y, x

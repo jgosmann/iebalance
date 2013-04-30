@@ -133,16 +133,22 @@ class ModelInputGroups(object):
 
 
 class SingleCellModel(b.Network):
-    def __init__(self, config):
+    def __init__(self, config, indata=None):
         b.Network.__init__(self)
 
         builder = ModelBuilder(config['model'])
-        self.input_gen = inputs.GroupedSpikeTimesGenerator(config['inputs'])
+        if indata is None:
+            self.input_gen = inputs.GroupedSpikeTimesGenerator(config['inputs'])
+            self.input_neurons = b.SpikeGeneratorGroup(
+                self.input_gen.num_trains,
+                inputs.swap_tuple_values(self.input_gen))
+        else:
+            self.input_gen = inputs.StoredSpikeTimesProvider(indata)
+            self.input_neurons = b.SpikeGeneratorGroup(
+                self.input_gen.num_trains, self.input_gen)
         self.indexing_scheme = self.input_gen.get_indexing_scheme()
 
         self.neuron = builder.build_neuron_group()
-        self.input_neurons = b.SpikeGeneratorGroup(
-            self.input_gen.num_trains, inputs.swap_tuple_values(self.input_gen))
         self.input_groups = ModelInputGroups(
             self.indexing_scheme, self.input_neurons)
         self.exc_synapses = builder.build_exc_synapses(
@@ -330,6 +336,9 @@ if __name__ == '__main__':
         '-c', '--config', type=str, nargs=1, required=True,
         help="Path to the configuration file.")
     parser.add_argument(
+        '-i', '--input', type=str, nargs=1,
+        help="Path to a file with pregenerated spike times.")
+    parser.add_argument(
         'output', nargs=1, type=str,
         help="Filename of the HDF5 output file.")
     parser.add_argument(
@@ -345,10 +354,20 @@ if __name__ == '__main__':
     with open(args.config[0], 'r') as f:
         config = json.load(f)
 
-    b.defaultclock.dt = quantity(config['dt'])
-    model = SingleCellModel(config)
-    recorder = SingleCellModelRecorder(config['recording'], model)
+    indata = None
+    if args.input is not None:
+        indata = tables.openFile(args.input[0], 'r')
 
-    with tables.openFile(os.path.join(outpath, args.output[0]), 'w') as outfile:
-        outfile.setNodeAttr('/', 'config', config)
-        recorder.record(outfile)
+    try:
+        if indata is not None:
+            config['inputs'] = indata.getNodeAttr('/', 'config')
+        b.defaultclock.dt = quantity(config['dt'])
+        model = SingleCellModel(config, indata)
+        recorder = SingleCellModelRecorder(config['recording'], model)
+
+        with tables.openFile(os.path.join(outpath, args.output[0]), 'w') as outfile:
+            outfile.setNodeAttr('/', 'config', config)
+            recorder.record(outfile)
+    finally:
+        if indata is not None:
+            indata.close()
