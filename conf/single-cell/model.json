@@ -25,8 +25,9 @@
         "tau_w": [120, "second"],
         "beta": 0.3,
         "normalization": "none",
-        "eta": 1e-2,
-        "tau_eta": [30, "second"],
+        "eta": 1e-3,
+        "eta_exc": 0.5e-4,
+        "tau_eta": [0, "second"],
         "rho": [5, "hertz"],
 
         "synapses": {
@@ -43,10 +44,10 @@
                 "pre": [
                     "xPre += 1",
                     "g_inh_post += w",
-                    "w += g_inh_bar * eta_post * (x_post - alpha)"
+                    "w += g_inh_bar * eta * (x_post - alpha)"
                 ],
                 "post": [
-                    "w += g_inh_bar * eta_post * xPre"
+                    "w += g_inh_bar * eta * xPre"
                 ]
             }
         }
