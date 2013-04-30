@@ -205,6 +205,9 @@ if __name__ == '__main__':
         '-c', '--config', type=str, nargs=1, required=True,
         help="Path to the configuration file.")
     parser.add_argument(
+        '-t', '--time', type=float, nargs=1, required=True,
+        help="Time point in seconds up to which to generate spikes.")
+    parser.add_argument(
         'output', nargs=1, type=str,
         help="Path ot the HDF5 output file.")
     args = parser.parse_args()
@@ -213,16 +216,27 @@ if __name__ == '__main__':
         config = json.load(f)
 
     with tables.openFile(args.output[0], 'w') as out_file:
+        out_file.setNodeAttr('/', 'config', config)
         input_group = out_file.createGroup('/', 'input_data', "Input data")
         spike_table = out_file.createTable(
             input_group, 'spiketimes', SpiketimesTable,
             "Table of spike times of Poisson spike train and the index of the" +
             " neuron producing the spike.")
-        generator = GroupedSpikeTimesGenerator(config)
-        spiketimes = [t for t in swap_tuple_values(generator)]
-        spike_table.append(spiketimes)
         spike_table.attrs.spiketime_unit = 'second'
-        spike_table.attrs.config = config
+
+        generator = GroupedSpikeTimesGenerator(config)
+        geniter = iter(generator)
+        t = 0 * brian.second
+        i = 0
+        while t < args.time[0] * brian.second:
+            t, idx = geniter.next()
+            spike = spike_table.row
+            spike['neuron_index'] = idx
+            spike['spiketime'] = t
+            spike.append()
+            i += 1
+            if i % 1000:
+                spike_table.flush()
         out_file.flush()
 
         indexing_group = out_file.createGroup(
