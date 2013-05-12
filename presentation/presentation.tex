@@ -71,39 +71,45 @@
 \begin{document}
 \maketitle
 
-\begin{frame} \frametitle{Inhibition-excitation balance}
+\begin{frame} \frametitle{Inhibition-Excitation Balance}
     \begin{center}
         \credit{\includegraphics[width=\textwidth]{figures/iebalance}}{\textcite{Okun:2008db}}
     \end{center}
 \end{frame}
 
-\begin{frame} \frametitle{Feedforward inhibition}
+\begin{frame} \frametitle{Feedforward Inhibition}
     \begin{center}
         \credit{\includegraphics[width=0.6\textwidth]{../report/figures/ff_inhibition}}{\textcite{Vogels:2011wr}}
     \end{center}
     \pause
-    \structure{Inhibitory plasticity}
+    \structure{Inhibitory Plasticity}
     \begin{equation*}
         \Delta w = \eta(\text{pre} \times \text{post} - \rho_0 \times 
         \text{pre})
     \end{equation*}
 \end{frame}
 
-\begin{frame} \frametitle{Before learning}
+\begin{frame} \frametitle{Neuron Input}
     \begin{center}
-        \includegraphics[width=\textwidth]{figures/weights_before}
-    \end{center}
-\end{frame}
-
-\begin{frame} \frametitle{After learning}
-    \begin{center}
-        \includegraphics[width=\textwidth]{figures/weights_after}
+        \credit{\includegraphics[width=0.6\textwidth]{figures/signals}}{\textcite{Vogels:2011wr}}
     \end{center}
 \end{frame}
 
 \begin{frame} \frametitle{Time Evolution of Firing Rate and Weights}
     \begin{center}
         \includegraphics[width=\textwidth]{figures/evo_orig}
+    \end{center}
+\end{frame}
+
+\begin{frame} \frametitle{Before Learning}
+    \begin{center}
+        \includegraphics[width=\textwidth]{figures/weights_before}
+    \end{center}
+\end{frame}
+
+\begin{frame} \frametitle{After Learning}
+    \begin{center}
+        \includegraphics[width=\textwidth]{figures/weights_after}
     \end{center}
 \end{frame}
 
@@ -118,12 +124,6 @@
     \end{center}
 \end{frame}
 
-\begin{frame} \frametitle{Firing Rates}
-    \begin{center}
-        \includegraphics[width=\textwidth]{figures/rates}
-    \end{center}
-\end{frame}
-
 \begin{frame} \frametitle{Response Properties}
     \begin{center}
         \includegraphics[width=\textwidth]{figures/correlations}
@@ -131,8 +131,20 @@
 \end{frame}
 
 \begin{frame} \frametitle{Excitatory Plasticity}
+    \begin{itemize}
+        \item With multiplicative normalization
+    \end{itemize}
     \begin{center}
         \includegraphics[width=\textwidth]{figures/exc-stdp-mult-l2}
+    \end{center}
+\end{frame}
+
+\begin{frame} \frametitle{Excitatory Plasticity}
+    \begin{itemize}
+        \item With additive normalization
+    \end{itemize}
+    \begin{center}
+        \includegraphics[width=\textwidth]{figures/exc-stdp-add-l2}
     \end{center}
 \end{frame}
 
